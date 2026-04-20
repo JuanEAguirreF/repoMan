@@ -1,0 +1,40 @@
+services:
+  backend:
+    image: ghcr.io/your-org-or-user/repoman-backend:latest
+    restart: unless-stopped
+    environment:
+      PORT: 4000
+      FRONTEND_ORIGIN: https://repoman.example.com
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_PUBLISHABLE_KEY: ${SUPABASE_PUBLISHABLE_KEY}
+      SUPABASE_SECRET_KEY: ${SUPABASE_SECRET_KEY}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+      CLOUDINARY_FOLDER: ${CLOUDINARY_FOLDER:-repoman/covers}
+      STORAGE_ROOT: /app/backend/uploads
+      MAX_FILE_SIZE_BYTES: ${MAX_FILE_SIZE_BYTES:-52428800}
+      MAX_COVER_SIZE_BYTES: ${MAX_COVER_SIZE_BYTES:-5242880}
+      COVER_TARGET_MAX_WIDTH: ${COVER_TARGET_MAX_WIDTH:-400}
+      COVER_TARGET_MAX_BYTES: ${COVER_TARGET_MAX_BYTES:-256000}
+    volumes:
+      - repoman_uploads:/app/backend/uploads
+    networks:
+      - repoman_net
+
+  frontend:
+    image: ghcr.io/your-org-or-user/repoman-frontend:latest
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    networks:
+      - repoman_net
+
+networks:
+  repoman_net:
+    driver: bridge
+
+volumes:
+  repoman_uploads:

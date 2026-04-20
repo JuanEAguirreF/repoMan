@@ -1,0 +1,12 @@
+{
+  "name": "repo-man",
+  "private": true,
+  "scripts": {
+    "dev:backend": "pnpm --filter catalog-backend dev",
+    "dev:frontend": "pnpm --filter catalog-frontend dev",
+    "dev:be": "pnpm run dev:backend",
+    "dev:fe": "pnpm run dev:frontend",
+    "build": "pnpm -r build",
+    "migrate": "pnpm --filter catalog-backend migrate"
+  }
+}
