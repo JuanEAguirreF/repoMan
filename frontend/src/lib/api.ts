@@ -5,7 +5,9 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL as string;
 async function authHeaders() {
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return headers;
 }
 
 export async function apiGet<T>(path: string, auth = false): Promise<T> {
@@ -16,7 +18,7 @@ export async function apiGet<T>(path: string, auth = false): Promise<T> {
 }
 
 export async function apiPost<T>(path: string, body?: unknown, auth = false): Promise<T> {
-  const headers: Record<string, string> = auth ? ((await authHeaders()) as Record<string, string>) : {};
+  const headers: Record<string, string> = auth ? await authHeaders() : {};
   if (body && !(body instanceof FormData)) {
     headers["Content-Type"] = "application/json";
   }
@@ -34,7 +36,7 @@ export async function apiPostFormWithProgress<T>(
   formData: FormData,
   onProgress: (pct: number) => void
 ): Promise<T> {
-  const headers = (await authHeaders()) as Record<string, string>;
+  const headers = await authHeaders();
 
   return new Promise<T>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
