@@ -132,6 +132,10 @@ This repository includes:
 
 - Configure backend runtime vars directly in Portainer (`SUPABASE_*`, `CLOUDINARY_*`, limits, etc.).
 - Set `PROXY_NETWORK` to your reverse proxy Docker network name (default in stack: `coolify`).
+- Set routing variables:
+  - `APP_DOMAIN=repoman.comunidaddelmanga.com`
+  - `API_DOMAIN=api.repoman.comunidaddelmanga.com`
+  - `TRAEFIK_CERTRESOLVER=letsencrypt` (or your resolver name in Coolify)
 - This stack does not expose host ports for RepoMan services; traffic must come through your existing reverse proxy on 80/443.
 
 ## Notes on Copyright & Access

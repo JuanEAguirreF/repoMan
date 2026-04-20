@@ -24,6 +24,15 @@ services:
     networks:
       - repoman_net
       - proxy_net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${PROXY_NETWORK:-coolify}"
+      - "traefik.http.routers.repoman-api.rule=Host(`${API_DOMAIN}`)"
+      - "traefik.http.routers.repoman-api.entrypoints=websecure"
+      - "traefik.http.routers.repoman-api.tls=true"
+      - "traefik.http.routers.repoman-api.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}"
+      - "traefik.http.routers.repoman-api.service=repoman-api-svc"
+      - "traefik.http.services.repoman-api-svc.loadbalancer.server.port=4000"
 
   frontend:
     image: ghcr.io/juaneaguirref/repoman-frontend:latest
@@ -35,6 +44,15 @@ services:
     networks:
       - repoman_net
       - proxy_net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${PROXY_NETWORK:-coolify}"
+      - "traefik.http.routers.repoman-web.rule=Host(`${APP_DOMAIN}`)"
+      - "traefik.http.routers.repoman-web.entrypoints=websecure"
+      - "traefik.http.routers.repoman-web.tls=true"
+      - "traefik.http.routers.repoman-web.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}"
+      - "traefik.http.routers.repoman-web.service=repoman-web-svc"
+      - "traefik.http.services.repoman-web-svc.loadbalancer.server.port=80"
 
 networks:
   repoman_net:
