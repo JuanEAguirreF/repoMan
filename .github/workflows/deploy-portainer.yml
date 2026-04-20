@@ -64,6 +64,8 @@ jobs:
             VITE_SUPABASE_PUBLISHABLE_KEY=${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
             VITE_LOGIN_IMAGE_URL=${{ secrets.VITE_LOGIN_IMAGE_URL }}
             VITE_HEADER_IMAGE_URL=${{ secrets.VITE_HEADER_IMAGE_URL }}
+            VITE_CAFE_IMAGE_URL=${{ secrets.VITE_CAFE_IMAGE_URL }}
+            VITE_SISTER_PLATFORM_URL=${{ secrets.VITE_SISTER_PLATFORM_URL }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
