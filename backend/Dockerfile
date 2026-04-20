@@ -5,13 +5,14 @@ WORKDIR /app
 
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
+ENV NODE_ENV=development
 
 RUN corepack enable
 
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
 COPY backend/package.json backend/package.json
 
-RUN pnpm install --frozen-lockfile --filter catalog-backend...
+RUN pnpm install --frozen-lockfile --prod=false --filter catalog-backend...
 
 COPY backend backend
 
