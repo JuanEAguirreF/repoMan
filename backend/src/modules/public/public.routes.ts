@@ -7,6 +7,58 @@ import { getPublicCatalog, getPublicCatalogDetail } from "../files/files.service
 import { getCached, setCached } from "./public.cache.js";
 
 export const publicRoutes: FastifyPluginAsync = async (fastify) => {
+  fastify.get("/top-uploaders", async (request, reply) => {
+    const cacheKey = "public:top-uploaders";
+    const hit = getCached<unknown[]>(cacheKey);
+    if (hit) {
+      reply.header("Cache-Control", "public, max-age=60");
+      return reply.send({ items: hit, cached: true });
+    }
+
+    const { data: filesData, error } = await fastify.supabaseAdmin
+      .from("files")
+      .select("owner_user_id, owner_profile:users_profiles!files_owner_user_id_fkey(auth_user_id)")
+      .eq("status", "active")
+      .eq("is_public", true);
+
+    if (error) {
+      request.log.error({ error }, "Error fetching top uploaders");
+      return reply.code(500).send({ error: "Server error" });
+    }
+
+    const counts = new Map<string, { count: number; authUserId: string | null }>();
+    for (const row of filesData || []) {
+      const ownerId = row.owner_user_id;
+      // Depending on how supabase returns joined singular objects vs arrays
+      const _profile = Array.isArray(row.owner_profile) ? row.owner_profile[0] : row.owner_profile;
+      const authUserId = _profile?.auth_user_id || null;
+      if (!counts.has(ownerId)) {
+        counts.set(ownerId, { count: 1, authUserId });
+      } else {
+        counts.get(ownerId)!.count++;
+      }
+    }
+
+    const sorted = Array.from(counts.values()).sort((a, b) => b.count - a.count).slice(0, 3);
+
+    const items = await Promise.all(
+      sorted.map(async (st) => {
+        let username = "Usuario Anónimo";
+        if (st.authUserId) {
+          const { data: authUser, error: authErr } = await fastify.supabaseAdmin.auth.admin.getUserById(st.authUserId);
+          if (!authErr && authUser?.user?.email) {
+            username = authUser.user.email.split("@")[0];
+          }
+        }
+        return { username, count: st.count };
+      })
+    );
+
+    setCached(cacheKey, items);
+    reply.header("Cache-Control", "public, max-age=60");
+    return reply.send({ items, cached: false });
+  });
+
   fastify.get("/files", async (_request, reply) => {
     const cacheKey = "public:list";
     const hit = getCached<unknown[]>(cacheKey);

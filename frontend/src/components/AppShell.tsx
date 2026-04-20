@@ -46,13 +46,13 @@ export function AppShell() {
   return (
     <div className="app-shell">
       <header className="shell-header">
-        <div className="brand-wrap">
+        <Link className="brand-wrap" to="/" style={{ textDecoration: "none", color: "inherit" }}>
           {headerImageUrl && <img src={headerImageUrl} alt="" className="header-side-image" aria-hidden="true" />}
           <div className="brand-line">
             <h1>{t.brand}</h1>
             <p>{t.parentSite}</p>
           </div>
-        </div>
+        </Link>
         <nav className="nav-links">
           <Link className="chip-link" to="/">
             {t.navPublicCatalog}

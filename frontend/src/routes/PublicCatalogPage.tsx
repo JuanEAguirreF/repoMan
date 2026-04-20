@@ -30,6 +30,7 @@ function shuffled<T>(input: T[]): T[] {
 
 export function PublicCatalogPage() {
   const [items, setItems] = useState<CatalogFile[]>([]);
+  const [topUploaders, setTopUploaders] = useState<{username: string, count: number}[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const { t } = useI18n();
@@ -38,9 +39,10 @@ export function PublicCatalogPage() {
     "https://ideas.comunidaddelmanga.com");
 
   useEffect(() => {
-    apiGet<{ items: CatalogFile[] }>("/public/files")
-      .then((res) => setItems(res.items))
-      .finally(() => setLoading(false));
+    Promise.all([
+      apiGet<{ items: CatalogFile[] }>("/public/files").then((res) => setItems(res.items)),
+      apiGet<{ items: {username: string, count: number}[] }>("/public/top-uploaders").then((res) => setTopUploaders(res.items)).catch(() => {})
+    ]).finally(() => setLoading(false));
   }, []);
 
   const filtered = useMemo(
@@ -157,6 +159,33 @@ export function PublicCatalogPage() {
               {t.sisterCta}
             </a>
           </div>
+
+          {topUploaders.length > 0 && (
+            <div className="top-uploaders-card" style={{ background: "var(--surface)", border: "1px solid var(--border)", padding: "16px", borderRadius: "8px", marginTop: "16px" }}>
+              <strong style={{ display: "block", marginBottom: "12px", fontSize: "1rem" }}>{t.topUploadersTitle || "Repormans Destacados"}</strong>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                {topUploaders.map((u, i) => (
+                  <div key={i}>
+                    {i === 0 && (
+                      <div style={{ fontSize: "1.2rem", fontWeight: "bold" }}>
+                        🥇 {u.username} <span style={{ opacity: 0.8, marginLeft: "4px" }}>({u.count})</span>
+                      </div>
+                    )}
+                    {i === 1 && (
+                      <div style={{ fontSize: "1.1rem" }}>
+                        🥈 {u.username}
+                      </div>
+                    )}
+                    {i === 2 && (
+                      <div style={{ fontSize: "1rem" }}>
+                        🥉 {u.username}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="kofi-card">
             {cafeImageUrl && <img src={cafeImageUrl} alt="" className="kofi-image" aria-hidden="true" />}

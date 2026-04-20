@@ -38,7 +38,7 @@ export function AdminFilesPage() {
           {items.map((item) => (
             <tr key={item.id}>
               <td>{item.title}</td>
-              <td>{item.owner_label || item.owner_email || item.owner_display_name || item.owner_user_id}</td>
+              <td>{item.owner_label || item.owner_email?.split('@')[0] || item.owner_display_name || item.owner_user_id}</td>
               <td>{item.category}</td>
               <td>
                 <StatusBadge status={item.status} />
