@@ -110,7 +110,11 @@ const messages = {
     colRequest: "Request",
     colFile: "File",
     colReason: "Reason",
-    colOwner: "Owner"
+    colOwner: "Owner",
+    footerDisclaimerLine1:
+      "Disclaimer: The metadata and cover images shown in RepoMan are provided only for educational, research, and archival reference purposes.",
+    footerDisclaimerLine2:
+      "Cover images displayed in this interface are served from external providers and are not stored on this server."
   },
   es: {
     brand: "RepoMan",
@@ -219,7 +223,11 @@ const messages = {
     colRequest: "Solicitud",
     colFile: "Archivo",
     colReason: "Motivo",
-    colOwner: "Propietario"
+    colOwner: "Propietario",
+    footerDisclaimerLine1:
+      "Aviso: Los metadatos e imágenes de portada mostrados en RepoMan se presentan únicamente con fines educativos, de investigación y de archivo.",
+    footerDisclaimerLine2:
+      "Las imágenes de portada mostradas en esta interfaz se sirven desde proveedores externos y no se almacenan en este servidor."
   }
 } as const;
 

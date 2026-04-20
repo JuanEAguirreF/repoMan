@@ -621,6 +621,25 @@ a {
   font-size: 0.88rem;
 }
 
+.site-footer {
+  margin-top: 26px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #f8faff;
+}
+
+.site-footer p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.site-footer p + p {
+  margin-top: 6px;
+}
+
 @media (max-width: 1120px) {
   .hero-overlay {
     position: relative;

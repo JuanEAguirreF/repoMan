@@ -85,6 +85,10 @@ export function AppShell() {
         </nav>
       </header>
       <Outlet />
+      <footer className="site-footer" role="contentinfo">
+        <p>{t.footerDisclaimerLine1}</p>
+        <p>{t.footerDisclaimerLine2}</p>
+      </footer>
     </div>
   );
 }
