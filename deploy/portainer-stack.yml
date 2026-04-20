@@ -1,6 +1,6 @@
 services:
   backend:
-    image: ghcr.io/your-org-or-user/repoman-backend:latest
+    image: ghcr.io/juaneaguirref/repoman-backend:latest
     restart: unless-stopped
     environment:
       PORT: 4000
@@ -23,7 +23,7 @@ services:
       - repoman_net
 
   frontend:
-    image: ghcr.io/your-org-or-user/repoman-frontend:latest
+    image: ghcr.io/juaneaguirref/repoman-frontend:latest
     restart: unless-stopped
     ports:
       - "8080:80"
