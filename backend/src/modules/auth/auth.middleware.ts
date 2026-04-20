@@ -1,5 +1,5 @@
 import { FastifyReply, FastifyRequest } from "fastify";
-import { AppRole } from "../../types/fastify.js";
+import type { AppRole } from "../../types/app-role.js";
 
 function unauthorized(reply: FastifyReply, message = "Unauthorized") {
   return reply.code(401).send({ error: message });

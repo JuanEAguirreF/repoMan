@@ -1,6 +1,5 @@
 import "fastify";
-
-export type AppRole = "super_admin" | "uploader";
+import type { AppRole } from "./app-role.js";
 
 declare module "fastify" {
   interface FastifyRequest {
