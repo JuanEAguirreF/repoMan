@@ -52,6 +52,13 @@ async function buildServer() {
   await app.register(adminRoutes, { prefix: "/api/admin" });
   await app.register(publicRoutes, { prefix: "/api/public" });
 
+  // Fallback map for paths without /api
+  await app.register(authRoutes, { prefix: "/auth" });
+  await app.register(filesRoutes, { prefix: "/files" });
+  await app.register(deletionRoutes); 
+  await app.register(adminRoutes, { prefix: "/admin" });
+  await app.register(publicRoutes, { prefix: "/public" });
+
   return app;
 }
 
