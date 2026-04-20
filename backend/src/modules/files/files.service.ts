@@ -24,7 +24,7 @@ import { uploadCoverToCloudinary } from "../../services/cloudinary.js";
 export type UploadedFileInput = {
   filename: string;
   mimetype: string;
-  buffer: Buffer;
+  buffer: Buffer<ArrayBufferLike>;
 };
 
 export async function createFileUpload(fastify: FastifyInstance, params: {

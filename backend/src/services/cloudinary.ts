@@ -9,12 +9,12 @@ cloudinary.config({
   secure: true
 });
 
-async function optimizeCoverToAvif(input: Buffer): Promise<Buffer> {
+async function optimizeCoverToAvif(input: Uint8Array): Promise<Uint8Array> {
   const qualities = [56, 48, 40, 34, 28];
-  let best = Buffer.alloc(0);
+  let best = new Uint8Array(0);
 
   for (const quality of qualities) {
-    const output = await sharp(input)
+    const outputBuffer = await sharp(input)
       .rotate()
       .resize({
         width: env.COVER_TARGET_MAX_WIDTH,
@@ -23,6 +23,7 @@ async function optimizeCoverToAvif(input: Buffer): Promise<Buffer> {
       })
       .avif({ quality, effort: 6 })
       .toBuffer();
+    const output = new Uint8Array(outputBuffer);
 
     best = output;
     if (output.length <= env.COVER_TARGET_MAX_BYTES) {
@@ -37,7 +38,7 @@ async function optimizeCoverToAvif(input: Buffer): Promise<Buffer> {
 }
 
 export async function uploadCoverToCloudinary(input: {
-  fileBuffer: Buffer;
+  fileBuffer: Uint8Array;
   fileIdHint: string;
 }): Promise<{ url: string; bytes: number }> {
   const optimized = await optimizeCoverToAvif(input.fileBuffer);

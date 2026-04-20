@@ -2,11 +2,13 @@ import fp from "fastify-plugin";
 import { createClient } from "@supabase/supabase-js";
 import { env } from "../config/env.js";
 
+type AppSupabaseClient = any;
+
 export const supabasePlugin = fp(async (fastify) => {
-  const supabasePublishable = createClient(env.SUPABASE_URL, env.SUPABASE_PUBLISHABLE_KEY, {
+  const supabasePublishable: AppSupabaseClient = createClient(env.SUPABASE_URL, env.SUPABASE_PUBLISHABLE_KEY, {
     auth: { persistSession: false }
   });
-  const supabaseAdmin = createClient(env.SUPABASE_URL, env.SUPABASE_SECRET_KEY, {
+  const supabaseAdmin: AppSupabaseClient = createClient(env.SUPABASE_URL, env.SUPABASE_SECRET_KEY, {
     auth: { persistSession: false }
   });
 
@@ -16,7 +18,7 @@ export const supabasePlugin = fp(async (fastify) => {
 
 declare module "fastify" {
   interface FastifyInstance {
-    supabasePublishable: ReturnType<typeof createClient>;
-    supabaseAdmin: ReturnType<typeof createClient>;
+    supabasePublishable: AppSupabaseClient;
+    supabaseAdmin: AppSupabaseClient;
   }
 }

@@ -46,7 +46,7 @@ export const publicRoutes: FastifyPluginAsync = async (fastify) => {
       const coverPath = String(item.cover_image_path || "").trim();
       if (/^https?:\/\//i.test(coverPath)) {
         reply.header("Cache-Control", "public, max-age=600");
-        return reply.redirect(302, coverPath);
+        return reply.redirect(coverPath);
       }
       const absolute = safeJoin(env.STORAGE_ROOT, coverPath);
       const bytes = await fs.readFile(absolute);

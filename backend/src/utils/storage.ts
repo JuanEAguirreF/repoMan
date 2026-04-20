@@ -13,7 +13,7 @@ export async function saveBufferToStorage(params: {
   subdir: "protected" | "covers";
   filename: string;
   mimetype: string;
-  buffer: Buffer;
+  buffer: Buffer<ArrayBufferLike>;
   maxBytes: number;
 }): Promise<{ storedFilename: string; relativePath: string; originalFilename: string; bytes: number }> {
   const original = sanitizeFilename(params.filename || "unknown.bin");
