@@ -76,8 +76,10 @@ jobs:
             echo "PORTAINER_STACK_WEBHOOK_URL is empty. Skipping webhook trigger."
             exit 0
           fi
+          FLAG="$(echo "${PORTAINER_WEBHOOK_INSECURE_TLS:-}" | tr '[:upper:]' '[:lower:]' | xargs)"
           CURL_INSECURE=""
-          if [ "$PORTAINER_WEBHOOK_INSECURE_TLS" = "true" ]; then
+          echo "Portainer webhook insecure TLS flag: ${FLAG:-<empty>}"
+          if [ "$FLAG" = "true" ] || [ "$FLAG" = "1" ] || [ "$FLAG" = "yes" ]; then
             CURL_INSECURE="--insecure"
             echo "Using insecure TLS for Portainer webhook (PORTAINER_WEBHOOK_INSECURE_TLS=true)."
           fi
