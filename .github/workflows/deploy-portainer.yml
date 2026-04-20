@@ -70,10 +70,16 @@ jobs:
       - name: Trigger Portainer stack webhook
         env:
           PORTAINER_STACK_WEBHOOK_URL: ${{ secrets.PORTAINER_STACK_WEBHOOK_URL }}
+          PORTAINER_WEBHOOK_INSECURE_TLS: ${{ secrets.PORTAINER_WEBHOOK_INSECURE_TLS }}
         run: |
           if [ -z "$PORTAINER_STACK_WEBHOOK_URL" ]; then
             echo "PORTAINER_STACK_WEBHOOK_URL is empty. Skipping webhook trigger."
             exit 0
           fi
-          curl -fsS -X POST "$PORTAINER_STACK_WEBHOOK_URL"
+          CURL_INSECURE=""
+          if [ "$PORTAINER_WEBHOOK_INSECURE_TLS" = "true" ]; then
+            CURL_INSECURE="--insecure"
+            echo "Using insecure TLS for Portainer webhook (PORTAINER_WEBHOOK_INSECURE_TLS=true)."
+          fi
+          curl -fsS $CURL_INSECURE -X POST "$PORTAINER_STACK_WEBHOOK_URL"
           echo "Portainer webhook triggered."
