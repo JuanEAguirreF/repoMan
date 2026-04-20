@@ -136,6 +136,7 @@ This repository includes:
   - `APP_DOMAIN=repoman.comunidaddelmanga.com`
   - `API_DOMAIN=apirepoman.comunidaddelmanga.com`
   - `TRAEFIK_CERTRESOLVER=letsencrypt` (or your resolver name in Coolify)
+  - `TRAEFIK_ENTRYPOINT_HTTPS=https` (use your Traefik HTTPS entrypoint name)
 - This stack does not expose host ports for RepoMan services; traffic must come through your existing reverse proxy on 80/443.
 
 ## Notes on Copyright & Access
