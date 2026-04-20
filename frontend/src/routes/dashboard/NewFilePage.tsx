@@ -73,7 +73,7 @@ export function NewFilePage() {
     if (!title) return setError(t.validationTitleRequired);
     if (!description) return setError(t.validationDescriptionRequired);
     if (!category) return setError(t.validationCategoryRequired);
-    if (!categories.includes(category)) return setError(t.validationCategoryInvalid);
+    if (!(categories as string[]).includes(category)) return setError(t.validationCategoryInvalid);
     if (!(mainFile instanceof File) || mainFile.size <= 0) return setError(t.validationMainFileRequired);
     if (!(coverImage instanceof File) || coverImage.size <= 0) return setError(t.validationCoverRequired);
 
