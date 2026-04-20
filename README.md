@@ -128,6 +128,12 @@ This repository includes:
 - `VITE_LOGIN_IMAGE_URL` (optional)
 - `VITE_HEADER_IMAGE_URL` (optional)
 
+### Portainer Runtime Variables
+
+- Configure backend runtime vars directly in Portainer (`SUPABASE_*`, `CLOUDINARY_*`, limits, etc.).
+- Set `PROXY_NETWORK` to your reverse proxy Docker network name (default in stack: `coolify`).
+- This stack does not expose host ports for RepoMan services; traffic must come through your existing reverse proxy on 80/443.
+
 ## Notes on Copyright & Access
 
 - RepoMan is built as a catalog/indexing platform.

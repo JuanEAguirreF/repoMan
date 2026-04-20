@@ -19,22 +19,29 @@ services:
       COVER_TARGET_MAX_BYTES: ${COVER_TARGET_MAX_BYTES:-256000}
     volumes:
       - repoman_uploads:/app/backend/uploads
+    expose:
+      - "4000"
     networks:
       - repoman_net
+      - proxy_net
 
   frontend:
     image: ghcr.io/juaneaguirref/repoman-frontend:latest
     restart: unless-stopped
-    ports:
-      - "8080:80"
+    expose:
+      - "80"
     depends_on:
       - backend
     networks:
       - repoman_net
+      - proxy_net
 
 networks:
   repoman_net:
     driver: bridge
+  proxy_net:
+    external: true
+    name: ${PROXY_NETWORK:-coolify}
 
 volumes:
   repoman_uploads:
