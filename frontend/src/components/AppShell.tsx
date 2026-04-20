@@ -10,6 +10,8 @@ export function AppShell() {
   const navigate = useNavigate();
   const { t } = useI18n();
   const headerImageUrl = (import.meta.env.VITE_HEADER_IMAGE_URL as string | undefined)?.trim();
+  const sisterPlatformUrl = ((import.meta.env.VITE_SISTER_PLATFORM_URL as string | undefined)?.trim() ||
+    "https://ideas.comunidaddelmanga.com");
 
   useEffect(() => {
     let active = true;
@@ -78,9 +80,14 @@ export function AppShell() {
               </button>
             </>
           ) : (
-            <Link className="chip-link" to="/login">
-              {t.navLogin}
-            </Link>
+            <>
+              <a className="chip-link" href={sisterPlatformUrl} target="_blank" rel="noopener noreferrer">
+                {t.navReadOnline}
+              </a>
+              <Link className="chip-link" to="/login">
+                {t.navLogin}
+              </Link>
+            </>
           )}
         </nav>
       </header>

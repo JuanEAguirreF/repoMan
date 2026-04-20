@@ -33,6 +33,9 @@ export function PublicCatalogPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const { t } = useI18n();
+  const cafeImageUrl = (import.meta.env.VITE_CAFE_IMAGE_URL as string | undefined)?.trim();
+  const sisterPlatformUrl = ((import.meta.env.VITE_SISTER_PLATFORM_URL as string | undefined)?.trim() ||
+    "https://ideas.comunidaddelmanga.com");
 
   useEffect(() => {
     apiGet<{ items: CatalogFile[] }>("/public/files")
@@ -145,6 +148,28 @@ export function PublicCatalogPage() {
               <span>{t.visibleItems}</span>
               <strong>{filtered.length}</strong>
             </div>
+          </div>
+
+          <div className="sister-card">
+            <strong>{t.sisterTitle}</strong>
+            <p>{t.sisterLead}</p>
+            <a className="sister-link" href={sisterPlatformUrl} target="_blank" rel="noopener noreferrer">
+              {t.sisterCta}
+            </a>
+          </div>
+
+          <div className="kofi-card">
+            {cafeImageUrl && <img src={cafeImageUrl} alt="" className="kofi-image" aria-hidden="true" />}
+            <strong>{t.supportTitle}</strong>
+            <p>{t.supportLead}</p>
+            <a
+              className="kofi-link"
+              href="https://ko-fi.com/comunidaddelmanga"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {t.supportCta}
+            </a>
           </div>
         </aside>
       </div>
