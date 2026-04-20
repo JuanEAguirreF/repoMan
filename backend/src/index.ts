@@ -16,7 +16,7 @@ async function buildServer() {
   });
 
   await app.register(cors, {
-    origin: env.FRONTEND_ORIGIN,
+    origin: env.FRONTEND_ORIGIN.split(',').map(o => o.trim()),
     credentials: true
   });
   await app.register(multipart, {
