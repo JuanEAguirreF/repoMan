@@ -34,8 +34,19 @@ export function NewFilePage() {
       t.categoryLostMedia,
       t.categoryArtbook,
       t.categoryDoujinshi,
-      t.categoryOneshot
-    ],
+      t.categoryOneshot,
+      t.categoryYuri,
+      t.categoryYaoi,
+      t.categoryMecha,
+      t.categoryRomance,
+      t.categoryComedy,
+      t.categoryEcchi,
+      t.categoryHentai,
+      t.categorySliceOfLife,
+      t.categoryFantasy,
+      t.categoryHorror,
+      t.categoryDrama
+    ].sort((a, b) => a.localeCompare(b)),
     [t]
   );
 
@@ -62,6 +73,7 @@ export function NewFilePage() {
     if (!title) return setError(t.validationTitleRequired);
     if (!description) return setError(t.validationDescriptionRequired);
     if (!category) return setError(t.validationCategoryRequired);
+    if (!categories.includes(category)) return setError(t.validationCategoryInvalid);
     if (!(mainFile instanceof File) || mainFile.size <= 0) return setError(t.validationMainFileRequired);
     if (!(coverImage instanceof File) || coverImage.size <= 0) return setError(t.validationCoverRequired);
 
@@ -113,16 +125,19 @@ export function NewFilePage() {
             <textarea id="description" name="description" required placeholder={t.placeholderDescription} rows={4} />
 
             <label htmlFor="category">{t.fieldCategory}</label>
-            <select id="category" name="category" defaultValue="" required>
-              <option value="" disabled>
-                {t.categorySelectPlaceholder}
-              </option>
-              {categories.map((category) => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
+            <input
+              id="category"
+              name="category"
+              list="categories-list"
+              placeholder={t.categorySelectPlaceholder}
+              required
+              autoComplete="off"
+            />
+            <datalist id="categories-list">
+              {categories.map((cat) => (
+                <option key={cat} value={cat} />
               ))}
-            </select>
+            </datalist>
 
             <label htmlFor="tags">{t.fieldTags}</label>
             <input id="tags" name="tags" placeholder={t.placeholderTags} />
@@ -166,6 +181,9 @@ export function NewFilePage() {
               }}
             />
             <small>{coverFileName || t.hintCoverImage}</small>
+            <div style={{ marginTop: "4px", fontSize: "0.85em", color: "var(--color-danger, #e74c3c)", fontWeight: "500" }}>
+              ⚠️ {t.hintCoverRules}
+            </div>
             {coverPreviewUrl && (
               <img className="cover-preview" src={coverPreviewUrl} alt={t.coverPreviewAlt} />
             )}
