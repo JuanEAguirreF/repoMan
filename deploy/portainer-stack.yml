@@ -27,7 +27,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=${PROXY_NETWORK:-coolify}"
-      - "traefik.http.routers.repoman-api.rule=Host(`${API_DOMAIN}`)"
+      - "traefik.http.routers.repoman-api.rule=Host(`${API_DOMAIN:-apirepoman.comunidaddelmanga.com}`)"
       - "traefik.http.routers.repoman-api.entrypoints=websecure"
       - "traefik.http.routers.repoman-api.tls=true"
       - "traefik.http.routers.repoman-api.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}"
