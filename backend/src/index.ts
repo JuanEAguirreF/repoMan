@@ -16,7 +16,22 @@ async function buildServer() {
   });
 
   await app.register(cors, {
-    origin: env.FRONTEND_ORIGIN.split(',').map(o => o.trim()),
+    origin: (origin, cb) => {
+      if (!origin) {
+        cb(null, true);
+        return;
+      }
+      
+      const allowed = ["https://repoman.comunidaddelmanga.com", "http://localhost:5173"];
+      const envOrigins = env.FRONTEND_ORIGIN.split(',').map((o: string) => o.trim().replace(/\/$/, ""));
+      
+      if (allowed.includes(origin) || envOrigins.includes(origin)) {
+        cb(null, true);
+        return;
+      }
+      
+      cb(new Error("Not allowed by CORS"), false);
+    },
     credentials: true
   });
   await app.register(multipart, {
