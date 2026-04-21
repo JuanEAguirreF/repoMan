@@ -60,6 +60,7 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.OWNER_LC }}/repoman-frontend:${{ github.sha }}
           build-args: |
             VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }}
+            VITE_SITE_URL=${{ secrets.VITE_SITE_URL }}
             VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }}
             VITE_SUPABASE_PUBLISHABLE_KEY=${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
             VITE_LOGIN_IMAGE_URL=${{ secrets.VITE_LOGIN_IMAGE_URL }}

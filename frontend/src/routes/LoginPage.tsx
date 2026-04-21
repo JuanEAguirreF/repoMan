@@ -2,6 +2,7 @@ import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { useI18n } from "../lib/i18n";
+import { useSeo } from "../lib/seo";
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -9,8 +10,17 @@ export function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const loginImageUrl = (import.meta.env.VITE_LOGIN_IMAGE_URL as string | undefined)?.trim();
+
+  useSeo({
+    title: t.loginTitle,
+    description: t.loginLead,
+    path: "/login",
+    lang: locale,
+    index: false,
+    follow: false
+  });
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();

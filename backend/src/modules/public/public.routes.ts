@@ -6,7 +6,50 @@ import { safeJoin } from "../../utils/filename.js";
 import { getPublicCatalog, getPublicCatalogDetail } from "../files/files.service.js";
 import { getCached, setCached } from "./public.cache.js";
 
+function escapeXml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+function getPublicSiteUrl(): string {
+  const origins = env.FRONTEND_ORIGIN.split(",").map((o) => o.trim().replace(/\/$/, ""));
+  const httpsOrigin = origins.find((origin) => origin.startsWith("https://"));
+  return httpsOrigin || origins[0] || "https://repoman.comunidaddelmanga.com";
+}
+
 export const publicRoutes: FastifyPluginAsync = async (fastify) => {
+  fastify.get("/sitemap.xml", async (_request, reply) => {
+    const cacheKey = "public:sitemap";
+    const hit = getCached<string>(cacheKey);
+    if (hit) {
+      reply.header("Cache-Control", "public, max-age=60");
+      return reply.type("application/xml; charset=utf-8").send(hit);
+    }
+
+    const items = await getPublicCatalog(fastify);
+    const siteUrl = getPublicSiteUrl();
+
+    const entries = [
+      `<url><loc>${escapeXml(`${siteUrl}/`)}</loc><changefreq>daily</changefreq><priority>1.0</priority></url>`,
+      ...items.map((item) => {
+        const fileId = String((item as { id: string }).id);
+        const publishedAt = (item as { published_at?: string; created_at?: string }).published_at || (item as { created_at?: string }).created_at;
+        const lastmod = publishedAt ? `<lastmod>${escapeXml(new Date(publishedAt).toISOString())}</lastmod>` : "";
+        return `<url><loc>${escapeXml(`${siteUrl}/files/${fileId}`)}</loc>${lastmod}<changefreq>weekly</changefreq><priority>0.8</priority></url>`;
+      })
+    ].join("");
+
+    const xml = `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${entries}</urlset>`;
+    setCached(cacheKey, xml);
+
+    reply.header("Cache-Control", "public, max-age=60");
+    return reply.type("application/xml; charset=utf-8").send(xml);
+  });
+
   fastify.get("/top-uploaders", async (request, reply) => {
     const cacheKey = "public:top-uploaders";
     const hit = getCached<unknown[]>(cacheKey);

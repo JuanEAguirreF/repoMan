@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { apiGet } from "../../lib/api";
 import { StatusBadge } from "../../components/StatusBadge";
 import { useI18n } from "../../lib/i18n";
+import { useSeo } from "../../lib/seo";
 
 type AdminFile = {
   id: string;
@@ -16,7 +17,16 @@ type AdminFile = {
 
 export function AdminFilesPage() {
   const [items, setItems] = useState<AdminFile[]>([]);
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+
+  useSeo({
+    title: t.adminAllFilesTitle,
+    description: t.adminAllFilesTitle,
+    path: "/dashboard/admin/files",
+    lang: locale,
+    index: false,
+    follow: false
+  });
 
   useEffect(() => {
     apiGet<{ items: AdminFile[] }>("/admin/files", true).then((res) => setItems(res.items));

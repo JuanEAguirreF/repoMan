@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { apiGet, resolveCoverUrl } from "../lib/api";
+import { useSeo } from "../lib/seo";
 import { CatalogFile } from "../types";
 import { useI18n } from "../lib/i18n";
 
@@ -22,7 +23,7 @@ export function PublicFileDetailPage() {
   const { id } = useParams();
   const [item, setItem] = useState<CatalogFile | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
 
   useEffect(() => {
     if (!id) return;
@@ -30,6 +31,34 @@ export function PublicFileDetailPage() {
       .then((res) => setItem(res.item))
       .catch(() => setError(t.detailNotFound));
   }, [id]);
+
+  const coverImageUrl = item ? resolveCoverUrl(item.id, item.cover_image_path) : undefined;
+  const safeDescription = item ? item.description.slice(0, 160) : t.detailLoading;
+
+  useSeo({
+    title: item ? `${item.title} - ${t.viewMetadata}` : t.detailLoading,
+    description: safeDescription,
+    path: id ? `/files/${id}` : "/",
+    lang: locale,
+    index: true,
+    follow: true,
+    type: "article",
+    image: coverImageUrl,
+    jsonLd: item
+      ? {
+          "@context": "https://schema.org",
+          "@type": "ComicStory",
+          name: item.title,
+          description: safeDescription,
+          genre: item.category,
+          keywords: item.tags?.join(", "),
+          inLanguage: "es",
+          image: coverImageUrl,
+          datePublished: item.published_at,
+          dateCreated: item.created_at
+        }
+      : undefined
+  });
 
   if (error) return <p>{error}</p>;
   if (!item) return <p>{t.detailLoading}</p>;

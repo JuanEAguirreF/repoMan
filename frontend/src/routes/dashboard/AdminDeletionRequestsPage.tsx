@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { apiGet, apiPost } from "../../lib/api";
 import { useI18n } from "../../lib/i18n";
+import { useSeo } from "../../lib/seo";
 
 type DeletionRequest = {
   id: string;
@@ -14,7 +15,16 @@ type DeletionRequest = {
 export function AdminDeletionRequestsPage() {
   const [items, setItems] = useState<DeletionRequest[]>([]);
   const [error, setError] = useState("");
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+
+  useSeo({
+    title: t.adminPendingTitle,
+    description: t.adminPendingTitle,
+    path: "/dashboard/admin/deletions",
+    lang: locale,
+    index: false,
+    follow: false
+  });
 
   async function load() {
     try {

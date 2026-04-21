@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiGet, resolveCoverUrl } from "../lib/api";
+import { useSeo } from "../lib/seo";
 import { CatalogFile } from "../types";
 import { useI18n } from "../lib/i18n";
 import { SpiralHero } from "../components/SpiralHero";
@@ -33,12 +34,14 @@ export function PublicCatalogPage() {
   const [topUploaders, setTopUploaders] = useState<{ username: string, count: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const cafeImageUrl = (import.meta.env.VITE_CAFE_IMAGE_URL as string | undefined)?.trim();
   const discordImageUrl = (import.meta.env.VITE_DISCORD_IMAGE_URL as string | undefined)?.trim();
   const discordInviteUrl = ((import.meta.env.VITE_DISCORD_INVITE_URL as string | undefined)?.trim() || "https://discord.gg/jURmbDXjnf");
   const sisterPlatformUrl = ((import.meta.env.VITE_SISTER_PLATFORM_URL as string | undefined)?.trim() ||
     "https://ideas.comunidaddelmanga.com");
+  const siteUrl = ((import.meta.env.VITE_SITE_URL as string | undefined)?.trim().replace(/\/$/, "") ||
+    "https://repoman.comunidaddelmanga.com");
 
   useEffect(() => {
     Promise.all([
@@ -84,6 +87,29 @@ export function PublicCatalogPage() {
     },
     [items]
   );
+
+  useSeo({
+    title: t.catalogTitle,
+    description: t.catalogLead,
+    path: "/",
+    lang: locale,
+    index: true,
+    follow: true,
+    type: "website",
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      name: t.catalogTitle,
+      description: t.catalogLead,
+      inLanguage: "es",
+      url: `${siteUrl}/`,
+      isPartOf: {
+        "@type": "WebSite",
+        name: "RepoMan",
+        url: siteUrl
+      }
+    }
+  });
 
   if (loading) return <p>{t.catalogLoading}</p>;
 

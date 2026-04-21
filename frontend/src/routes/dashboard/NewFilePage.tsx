@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { apiPostFormWithProgress } from "../../lib/api";
 import { useI18n } from "../../lib/i18n";
+import { useSeo } from "../../lib/seo";
 
 const MAX_MAIN_FILE_BYTES = 50 * 1024 * 1024;
 const MAX_COVER_BYTES = 5 * 1024 * 1024;
@@ -21,7 +22,17 @@ export function NewFilePage() {
   const [mainFileName, setMainFileName] = useState("");
   const [coverFileName, setCoverFileName] = useState("");
   const [coverPreviewUrl, setCoverPreviewUrl] = useState("");
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+
+  useSeo({
+    title: t.newFileTitle,
+    description: t.newFileLead,
+    path: "/dashboard/new",
+    lang: locale,
+    index: false,
+    follow: false
+  });
+
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const categories = useMemo(
     () => [

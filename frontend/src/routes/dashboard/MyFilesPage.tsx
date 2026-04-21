@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { apiGet, apiPost } from "../../lib/api";
 import { StatusBadge } from "../../components/StatusBadge";
 import { useI18n } from "../../lib/i18n";
+import { useSeo } from "../../lib/seo";
 
 type MyFile = {
   id: string;
@@ -16,7 +17,16 @@ type MyFile = {
 export function MyFilesPage() {
   const [items, setItems] = useState<MyFile[]>([]);
   const [error, setError] = useState("");
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+
+  useSeo({
+    title: t.myFilesTitle,
+    description: t.myFilesTitle,
+    path: "/dashboard/files",
+    lang: locale,
+    index: false,
+    follow: false
+  });
 
   async function load() {
     try {
