@@ -65,14 +65,15 @@ export function PublicFileDetailPage() {
 
   if (error) return <p>{error}</p>;
   if (!item) return <p>{t.detailLoading}</p>;
+  const currentItem = item;
 
-  const shareMessage = item.has_backup
-    ? `'${item.title}'. Esta obra está conservada actualmente en nuestra web.`
-    : `¿Reconoces esta obra? '${item.title}' si lo tienes descargado puedes compartirlo con nosotros para su conservación.`;
+  const shareMessage = currentItem.has_backup
+    ? `'${currentItem.title}'. Esta obra está conservada actualmente en nuestra web.`
+    : `¿Reconoces esta obra? '${currentItem.title}' si lo tienes descargado puedes compartirlo con nosotros para su conservación.`;
 
   async function shareEntry() {
     const url = window.location.href;
-    const payload = { title: item.title, text: shareMessage, url };
+    const payload = { title: currentItem.title, text: shareMessage, url };
     try {
       if (navigator.share) {
         await navigator.share(payload);
@@ -88,32 +89,32 @@ export function PublicFileDetailPage() {
 
   return (
     <section className="detail-card">
-      <h1 className="detail-title">{item.title}</h1>
+      <h1 className="detail-title">{currentItem.title}</h1>
       <div className="detail-layout">
         <div className="detail-cover">
-          <img src={resolveCoverUrl(item.id, item.cover_image_path)} alt={item.title} />
+          <img src={resolveCoverUrl(currentItem.id, currentItem.cover_image_path)} alt={currentItem.title} />
         </div>
         <div className="detail-side">
-          <p>{item.description}</p>
+          <p>{currentItem.description}</p>
           <dl className="detail-meta">
             <div>
               <dt>{t.colCategory}</dt>
-              <dd>{item.category}</dd>
+              <dd>{currentItem.category}</dd>
             </div>
             <div>
               <dt>{t.fileType}</dt>
-              <dd>{item.has_backup ? displayFileType(item.mime_type) : t.noBackupLabel}</dd>
+              <dd>{currentItem.has_backup ? displayFileType(currentItem.mime_type) : t.noBackupLabel}</dd>
             </div>
             <div>
               <dt>{t.fileSize}</dt>
-              <dd>{item.has_backup ? `${(item.file_size_bytes / 1024 / 1024).toFixed(2)} MB` : "-"}</dd>
+              <dd>{currentItem.has_backup ? `${(currentItem.file_size_bytes / 1024 / 1024).toFixed(2)} MB` : "-"}</dd>
             </div>
             <div>
               <dt>{t.uploadedAt}</dt>
-              <dd>{new Date(item.created_at).toLocaleDateString()}</dd>
+              <dd>{new Date(currentItem.created_at).toLocaleDateString()}</dd>
             </div>
           </dl>
-          {!item.has_backup && (
+          {!currentItem.has_backup && (
             <p className="detail-note">
               {t.noBackupDetail}{" "}
               <a href={discordInviteUrl} target="_blank" rel="noopener noreferrer">
