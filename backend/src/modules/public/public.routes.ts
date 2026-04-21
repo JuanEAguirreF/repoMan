@@ -30,14 +30,18 @@ export const publicRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.type("application/xml; charset=utf-8").send(hit);
     }
 
-    const items = await getPublicCatalog(fastify);
+    const items = (await getPublicCatalog(fastify)) as Array<{
+      id: string;
+      published_at?: string;
+      created_at?: string;
+    }>;
     const siteUrl = getPublicSiteUrl();
 
     const entries = [
       `<url><loc>${escapeXml(`${siteUrl}/`)}</loc><changefreq>daily</changefreq><priority>1.0</priority></url>`,
       ...items.map((item) => {
-        const fileId = String((item as { id: string }).id);
-        const publishedAt = (item as { published_at?: string; created_at?: string }).published_at || (item as { created_at?: string }).created_at;
+        const fileId = String(item.id);
+        const publishedAt = item.published_at || item.created_at;
         const lastmod = publishedAt ? `<lastmod>${escapeXml(new Date(publishedAt).toISOString())}</lastmod>` : "";
         return `<url><loc>${escapeXml(`${siteUrl}/files/${fileId}`)}</loc>${lastmod}<changefreq>weekly</changefreq><priority>0.8</priority></url>`;
       })
