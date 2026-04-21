@@ -30,20 +30,20 @@ function shuffled<T>(input: T[]): T[] {
 
 export function PublicCatalogPage() {
   const [items, setItems] = useState<CatalogFile[]>([]);
-  const [topUploaders, setTopUploaders] = useState<{username: string, count: number}[]>([]);
+  const [topUploaders, setTopUploaders] = useState<{ username: string, count: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const { t } = useI18n();
   const cafeImageUrl = (import.meta.env.VITE_CAFE_IMAGE_URL as string | undefined)?.trim();
   const discordImageUrl = (import.meta.env.VITE_DISCORD_IMAGE_URL as string | undefined)?.trim();
-  const discordInviteUrl = ((import.meta.env.VITE_DISCORD_INVITE_URL as string | undefined)?.trim() || "https://discord.com");
+  const discordInviteUrl = ((import.meta.env.VITE_DISCORD_INVITE_URL as string | undefined)?.trim() || "https://discord.gg/jURmbDXjnf");
   const sisterPlatformUrl = ((import.meta.env.VITE_SISTER_PLATFORM_URL as string | undefined)?.trim() ||
     "https://ideas.comunidaddelmanga.com");
 
   useEffect(() => {
     Promise.all([
       apiGet<{ items: CatalogFile[] }>("/public/files").then((res) => setItems(res.items)),
-      apiGet<{ items: {username: string, count: number}[] }>("/public/top-uploaders").then((res) => setTopUploaders(res.items)).catch(() => {})
+      apiGet<{ items: { username: string, count: number }[] }>("/public/top-uploaders").then((res) => setTopUploaders(res.items)).catch(() => { })
     ]).finally(() => setLoading(false));
   }, []);
 

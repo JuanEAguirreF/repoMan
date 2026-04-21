@@ -360,6 +360,7 @@ a {
 }
 
 .discord-image {
+  width: 150px;
   display: block;
   border-radius: 10px;
   margin: auto;
