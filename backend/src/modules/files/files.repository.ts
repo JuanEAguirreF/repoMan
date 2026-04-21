@@ -12,7 +12,7 @@ export async function createFileRecord(
 export async function listFilesByOwner(fastify: FastifyInstance, ownerUserId: string) {
   const { data, error } = await fastify.supabaseAdmin
     .from("files")
-    .select("id,title,category,mime_type,file_size_bytes,status,created_at,cover_image_path")
+    .select("id,title,category,mime_type,file_size_bytes,status,created_at,cover_image_path,has_backup")
     .eq("owner_user_id", ownerUserId)
     .order("created_at", { ascending: false });
   if (error) throw error;
@@ -41,7 +41,7 @@ export async function setFileStatus(
 export async function listPublicFiles(fastify: FastifyInstance) {
   const { data, error } = await fastify.supabaseAdmin
     .from("files")
-    .select("id,title,description,category,tags,mime_type,file_size_bytes,created_at,published_at,cover_image_path,status,is_public")
+    .select("id,title,description,category,tags,mime_type,file_size_bytes,created_at,published_at,cover_image_path,status,is_public,has_backup")
     .eq("status", "active")
     .eq("is_public", true)
     .order("published_at", { ascending: false });
@@ -53,7 +53,7 @@ export async function getPublicFileById(fastify: FastifyInstance, fileId: string
   const { data, error } = await fastify.supabaseAdmin
     .from("files")
     .select(
-      "id,title,description,category,tags,mime_type,file_size_bytes,created_at,published_at,cover_image_path,status,is_public"
+      "id,title,description,category,tags,mime_type,file_size_bytes,created_at,published_at,cover_image_path,status,is_public,has_backup"
     )
     .eq("id", fileId)
     .eq("status", "active")

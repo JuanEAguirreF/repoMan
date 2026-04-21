@@ -13,8 +13,11 @@ function getExtension(name: string): string {
   return dotIndex >= 0 ? name.slice(dotIndex).toLowerCase() : "";
 }
 
+type PublicationMode = "preserve" | "request_backup";
+
 export function NewFilePage() {
   const formRef = useRef<HTMLFormElement | null>(null);
+  const mainFileInputRef = useRef<HTMLInputElement | null>(null);
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -22,6 +25,7 @@ export function NewFilePage() {
   const [mainFileName, setMainFileName] = useState("");
   const [coverFileName, setCoverFileName] = useState("");
   const [coverPreviewUrl, setCoverPreviewUrl] = useState("");
+  const [publicationMode, setPublicationMode] = useState<PublicationMode>("preserve");
   const { t, locale } = useI18n();
 
   useSeo({
@@ -85,13 +89,19 @@ export function NewFilePage() {
     if (!description) return setError(t.validationDescriptionRequired);
     if (!category) return setError(t.validationCategoryRequired);
     if (!(categories as string[]).includes(category)) return setError(t.validationCategoryInvalid);
-    if (!(mainFile instanceof File) || mainFile.size <= 0) return setError(t.validationMainFileRequired);
     if (!(coverImage instanceof File) || coverImage.size <= 0) return setError(t.validationCoverRequired);
 
-    const mainExt = getExtension(mainFile.name);
+    const hasMainFile = mainFile instanceof File && mainFile.size > 0;
+    if (publicationMode === "preserve" && !hasMainFile) return setError(t.validationMainFileRequired);
+
+    if (publicationMode === "request_backup") {
+      data.delete("file");
+    }
+
+    const mainExt = hasMainFile ? getExtension(mainFile.name) : "";
     const coverExt = getExtension(coverImage.name);
-    if (!ALLOWED_MAIN_EXTENSIONS.includes(mainExt)) return setError(t.validationMainFileType);
-    if (mainFile.size > MAX_MAIN_FILE_BYTES) return setError(t.validationMainFileSize);
+    if (hasMainFile && !ALLOWED_MAIN_EXTENSIONS.includes(mainExt)) return setError(t.validationMainFileType);
+    if (hasMainFile && mainFile.size > MAX_MAIN_FILE_BYTES) return setError(t.validationMainFileSize);
     if (!ALLOWED_COVER_EXTENSIONS.includes(coverExt)) return setError(t.validationCoverType);
     if (coverImage.size > MAX_COVER_BYTES) return setError(t.validationCoverSize);
     if (extraMetadata) {
@@ -125,6 +135,44 @@ export function NewFilePage() {
       <h1>{t.newFileTitle}</h1>
       <p>{t.newFileLead}</p>
       <form ref={formRef} onSubmit={onSubmit} className="upload-form">
+        <fieldset className="upload-fieldset publication-mode-fieldset">
+          <legend>{t.publishModeLegend}</legend>
+          <label className="publication-mode-option">
+            <input
+              type="radio"
+              name="publicationMode"
+              value="preserve"
+              checked={publicationMode === "preserve"}
+              onChange={() => setPublicationMode("preserve")}
+            />
+            <span>
+              <strong>{t.publishModePreserveLabel}</strong>
+              <br />
+              <small>{t.publishModePreserveDesc}</small>
+            </span>
+          </label>
+          <label className="publication-mode-option">
+            <input
+              type="radio"
+              name="publicationMode"
+              value="request_backup"
+              checked={publicationMode === "request_backup"}
+              onChange={() => {
+                setPublicationMode("request_backup");
+                setMainFileName("");
+                if (mainFileInputRef.current) {
+                  mainFileInputRef.current.value = "";
+                }
+              }}
+            />
+            <span>
+              <strong>{t.publishModeRequestLabel}</strong>
+              <br />
+              <small>{t.publishModeRequestDesc}</small>
+            </span>
+          </label>
+        </fieldset>
+
         <div className="upload-form-grid">
           <fieldset className="upload-fieldset">
             <legend>{t.newFileMetaSection}</legend>
@@ -164,14 +212,19 @@ export function NewFilePage() {
 
             <label htmlFor="file">{t.fieldMainFile}</label>
             <input
+              ref={mainFileInputRef}
               id="file"
               name="file"
               type="file"
-              required
+              disabled={publicationMode === "request_backup"}
               accept=".pdf,.zip,.cbz,.cbr,.txt,.doc,.docx"
               onChange={(e) => setMainFileName(e.currentTarget.files?.[0]?.name ?? "")}
             />
-            <small>{mainFileName || t.hintMainFile}</small>
+            <small>
+              {publicationMode === "preserve"
+                ? mainFileName || t.publishModePreserveHint
+                : t.publishModeRequestHint}
+            </small>
 
             <label htmlFor="coverImage">{t.fieldCoverImage}</label>
             <input

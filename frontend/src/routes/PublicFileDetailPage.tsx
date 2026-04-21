@@ -23,7 +23,10 @@ export function PublicFileDetailPage() {
   const { id } = useParams();
   const [item, setItem] = useState<CatalogFile | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [shareStatus, setShareStatus] = useState<string>("");
   const { t, locale } = useI18n();
+  const discordInviteUrl =
+    ((import.meta.env.VITE_DISCORD_INVITE_URL as string | undefined)?.trim() || "https://discord.gg/jURmbDXjnf");
 
   useEffect(() => {
     if (!id) return;
@@ -63,6 +66,26 @@ export function PublicFileDetailPage() {
   if (error) return <p>{error}</p>;
   if (!item) return <p>{t.detailLoading}</p>;
 
+  const shareMessage = item.has_backup
+    ? `'${item.title}'. Esta obra está conservada actualmente en nuestra web.`
+    : `¿Reconoces esta obra? '${item.title}' si lo tienes descargado puedes compartirlo con nosotros para su conservación.`;
+
+  async function shareEntry() {
+    const url = window.location.href;
+    const payload = { title: item.title, text: shareMessage, url };
+    try {
+      if (navigator.share) {
+        await navigator.share(payload);
+        setShareStatus(t.shareDone);
+        return;
+      }
+      await navigator.clipboard.writeText(`${shareMessage}\n${url}`);
+      setShareStatus(t.shareCopied);
+    } catch {
+      setShareStatus(t.shareFailed);
+    }
+  }
+
   return (
     <section className="detail-card">
       <h1 className="detail-title">{item.title}</h1>
@@ -79,18 +102,30 @@ export function PublicFileDetailPage() {
             </div>
             <div>
               <dt>{t.fileType}</dt>
-              <dd>{displayFileType(item.mime_type)}</dd>
+              <dd>{item.has_backup ? displayFileType(item.mime_type) : t.noBackupLabel}</dd>
             </div>
             <div>
               <dt>{t.fileSize}</dt>
-              <dd>{(item.file_size_bytes / 1024 / 1024).toFixed(2)} MB</dd>
+              <dd>{item.has_backup ? `${(item.file_size_bytes / 1024 / 1024).toFixed(2)} MB` : "-"}</dd>
             </div>
             <div>
               <dt>{t.uploadedAt}</dt>
               <dd>{new Date(item.created_at).toLocaleDateString()}</dd>
             </div>
           </dl>
+          {!item.has_backup && (
+            <p className="detail-note">
+              {t.noBackupDetail}{" "}
+              <a href={discordInviteUrl} target="_blank" rel="noopener noreferrer">
+                {t.discordCta}
+              </a>
+            </p>
+          )}
           <p className="detail-note">{t.detailNotice}</p>
+          <button type="button" className="chip-btn" onClick={shareEntry}>
+            {t.shareEntry}
+          </button>
+          {shareStatus && <p className="detail-note">{shareStatus}</p>}
         </div>
       </div>
     </section>

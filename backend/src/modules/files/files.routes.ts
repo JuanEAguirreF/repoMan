@@ -24,6 +24,10 @@ async function parseMultipartForm(request: any): Promise<ParsedForm> {
     if (part.type === "file") {
       const filePart = part as MultipartFile;
       const buffer = await filePart.toBuffer();
+      const hasFilename = typeof filePart.filename === "string" && filePart.filename.trim().length > 0;
+      if (!hasFilename || buffer.length === 0) {
+        continue;
+      }
       files[part.fieldname] = {
         filename: filePart.filename || "unknown.bin",
         mimetype: filePart.mimetype,
@@ -49,8 +53,8 @@ export const filesRoutes: FastifyPluginAsync = async (fastify) => {
       const mainFile = parsed.files.file;
       const coverFile = parsed.files.coverImage;
 
-      if (!mainFile || !coverFile) {
-        return reply.code(400).send({ error: "file and coverImage are required" });
+      if (!coverFile) {
+        return reply.code(400).send({ error: "coverImage is required" });
       }
 
       const created = await createFileUpload(fastify, {

@@ -674,6 +674,22 @@ a {
   font-size: 0.78rem;
 }
 
+.publication-mode-fieldset {
+  display: grid;
+  gap: 10px;
+}
+
+.publication-mode-option {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.publication-mode-option input[type="radio"] {
+  width: auto;
+  margin-top: 2px;
+}
+
 .cover-preview {
   width: min(230px, 100%);
   aspect-ratio: 210/297;

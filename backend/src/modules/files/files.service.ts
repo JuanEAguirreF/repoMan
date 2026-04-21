@@ -30,7 +30,7 @@ export type UploadedFileInput = {
 export async function createFileUpload(fastify: FastifyInstance, params: {
   ownerUserId: string;
   metadata: Record<string, string>;
-  mainFile: UploadedFileInput;
+  mainFile?: UploadedFileInput;
   coverFile: UploadedFileInput;
 }) {
   const parsedMetadata = fileMetadataSchema.parse({
@@ -42,35 +42,45 @@ export async function createFileUpload(fastify: FastifyInstance, params: {
     extraMetadata: params.metadata.extraMetadata
   });
 
-  if (!allowedFileMimes.has(params.mainFile.mimetype)) {
-    throw new Error("Unsupported main file type");
-  }
   if (!allowedCoverMimes.has(params.coverFile.mimetype)) {
     throw new Error("Unsupported cover image type");
   }
   if (params.coverFile.buffer.length > env.MAX_COVER_SIZE_BYTES) {
     throw new Error("Cover image file too large");
   }
-  const fileExt = path.extname(params.mainFile.filename || "").toLowerCase();
   const coverExt = path.extname(params.coverFile.filename || "").toLowerCase();
-  if (!allowedFileExtensions.has(fileExt)) {
-    throw new Error("Unsupported main file extension");
-  }
-  if (params.mainFile.mimetype === "application/octet-stream" && ![".cbz", ".cbr"].includes(fileExt)) {
-    throw new Error("Unsupported main file type");
-  }
   if (!allowedCoverExtensions.has(coverExt)) {
     throw new Error("Unsupported cover image extension");
   }
 
-  const savedMain = await saveBufferToStorage({
-    storageRoot: env.STORAGE_ROOT,
-    subdir: "protected",
-    filename: params.mainFile.filename,
-    mimetype: params.mainFile.mimetype,
-    buffer: params.mainFile.buffer,
-    maxBytes: env.MAX_FILE_SIZE_BYTES
-  });
+  if (params.mainFile) {
+    if (!allowedFileMimes.has(params.mainFile.mimetype)) {
+      throw new Error("Unsupported main file type");
+    }
+    const fileExt = path.extname(params.mainFile.filename || "").toLowerCase();
+    if (!allowedFileExtensions.has(fileExt)) {
+      throw new Error("Unsupported main file extension");
+    }
+    if (params.mainFile.mimetype === "application/octet-stream" && ![".cbz", ".cbr"].includes(fileExt)) {
+      throw new Error("Unsupported main file type");
+    }
+  }
+
+  const savedMain = params.mainFile
+    ? await saveBufferToStorage({
+        storageRoot: env.STORAGE_ROOT,
+        subdir: "protected",
+        filename: params.mainFile.filename,
+        mimetype: params.mainFile.mimetype,
+        buffer: params.mainFile.buffer,
+        maxBytes: env.MAX_FILE_SIZE_BYTES
+      })
+    : {
+        originalFilename: "__no_backup__",
+        storedFilename: "__no_backup__",
+        relativePath: "__no_backup__",
+        bytes: 1
+      };
   const uploadedCover = await uploadCoverToCloudinary({
     fileBuffer: params.coverFile.buffer,
     fileIdHint: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
@@ -88,8 +98,9 @@ export async function createFileUpload(fastify: FastifyInstance, params: {
     stored_filename: savedMain.storedFilename,
     file_path: savedMain.relativePath,
     cover_image_path: uploadedCover.url,
-    mime_type: params.mainFile.mimetype,
+    mime_type: params.mainFile?.mimetype ?? "application/x-manga-metadata-only",
     file_size_bytes: savedMain.bytes,
+    has_backup: Boolean(params.mainFile),
     status: "active",
     is_public: true,
     allow_download: false,
@@ -105,7 +116,7 @@ export async function createFileUpload(fastify: FastifyInstance, params: {
     action: "file.uploaded",
     targetType: "file",
     targetId: String(created.id),
-    metadata: { title: created.title, mimeType: created.mime_type }
+    metadata: { title: created.title, mimeType: created.mime_type, hasBackup: Boolean(params.mainFile) }
   });
 
   invalidatePublicCache();

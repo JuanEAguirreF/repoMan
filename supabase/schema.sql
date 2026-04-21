@@ -26,6 +26,7 @@ create table if not exists files (
   cover_image_path text not null,
   mime_type text not null,
   file_size_bytes bigint not null check (file_size_bytes > 0),
+  has_backup boolean not null default true,
   status file_status not null default 'active',
   is_public boolean not null default true,
   allow_download boolean not null default false,
@@ -86,6 +87,7 @@ select
   f.tags,
   f.mime_type,
   f.file_size_bytes,
+  f.has_backup,
   f.cover_image_path,
   f.created_at,
   f.published_at

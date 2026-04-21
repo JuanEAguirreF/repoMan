@@ -141,12 +141,20 @@ export function PublicCatalogPage() {
                 <div>
                   <h3>{item.title}</h3>
                   <p className="meta-line">{item.category}</p>
-                  <p className="meta-line">
-                    {t.fileType}: {displayFileType(item.mime_type)}
-                  </p>
-                  <p className="meta-line">
-                    {t.fileSize}: {(item.file_size_bytes / 1024 / 1024).toFixed(2)} MB
-                  </p>
+                  {item.has_backup ? (
+                    <>
+                      <p className="meta-line">
+                        {t.fileType}: {displayFileType(item.mime_type)}
+                      </p>
+                      <p className="meta-line">
+                        {t.fileSize}: {(item.file_size_bytes / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                    </>
+                  ) : (
+                    <p className="meta-line" style={{ color: "var(--danger, #c0392b)", fontWeight: 600 }}>
+                      {t.noBackupLabel}
+                    </p>
+                  )}
                   <Link className="meta-link" to={`/files/${item.id}`}>
                     {t.viewMetadata}
                   </Link>
