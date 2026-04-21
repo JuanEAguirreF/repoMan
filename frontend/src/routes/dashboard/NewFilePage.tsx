@@ -137,40 +137,47 @@ export function NewFilePage() {
       <form ref={formRef} onSubmit={onSubmit} className="upload-form">
         <fieldset className="upload-fieldset publication-mode-fieldset">
           <legend>{t.publishModeLegend}</legend>
-          <label className="publication-mode-option">
-            <input
-              type="radio"
-              name="publicationMode"
-              value="preserve"
-              checked={publicationMode === "preserve"}
-              onChange={() => setPublicationMode("preserve")}
-            />
-            <span>
-              <strong>{t.publishModePreserveLabel}</strong>
-              <br />
-              <small>{t.publishModePreserveDesc}</small>
-            </span>
-          </label>
-          <label className="publication-mode-option">
-            <input
-              type="radio"
-              name="publicationMode"
-              value="request_backup"
-              checked={publicationMode === "request_backup"}
-              onChange={() => {
-                setPublicationMode("request_backup");
-                setMainFileName("");
-                if (mainFileInputRef.current) {
-                  mainFileInputRef.current.value = "";
-                }
-              }}
-            />
-            <span>
-              <strong>{t.publishModeRequestLabel}</strong>
-              <br />
-              <small>{t.publishModeRequestDesc}</small>
-            </span>
-          </label>
+          <div className="publication-mode-grid">
+            <label
+              className={`publication-mode-card ${publicationMode === "preserve" ? "is-active" : ""}`}
+              aria-pressed={publicationMode === "preserve"}
+            >
+              <input
+                className="publication-mode-radio"
+                type="radio"
+                name="publicationMode"
+                value="preserve"
+                checked={publicationMode === "preserve"}
+                onChange={() => setPublicationMode("preserve")}
+              />
+              <span className="publication-mode-title">{t.publishModePreserveLabel}</span>
+              <span className="publication-mode-desc">{t.publishModePreserveDesc}</span>
+            </label>
+            <label
+              className={`publication-mode-card ${publicationMode === "request_backup" ? "is-active" : ""}`}
+              aria-pressed={publicationMode === "request_backup"}
+            >
+              <input
+                className="publication-mode-radio"
+                type="radio"
+                name="publicationMode"
+                value="request_backup"
+                checked={publicationMode === "request_backup"}
+                onChange={() => {
+                  setPublicationMode("request_backup");
+                  setMainFileName("");
+                  if (mainFileInputRef.current) {
+                    mainFileInputRef.current.value = "";
+                  }
+                }}
+              />
+              <span className="publication-mode-title">{t.publishModeRequestLabel}</span>
+              <span className="publication-mode-desc">{t.publishModeRequestDesc}</span>
+            </label>
+          </div>
+          <p className="publication-mode-summary">
+            {publicationMode === "preserve" ? t.publishModePreserveHint : t.publishModeRequestHint}
+          </p>
         </fieldset>
 
         <div className="upload-form-grid">
