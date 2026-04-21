@@ -351,6 +351,37 @@ a {
   font-weight: 600;
 }
 
+.discord-card {
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px;
+  background: #f8fbff;
+}
+
+.discord-image {
+  width: 100%;
+  display: block;
+  border-radius: 10px;
+  margin-bottom: 8px;
+}
+
+.discord-card p {
+  margin: 6px 0 10px;
+}
+
+.discord-link {
+  display: inline-flex;
+  border: 1px solid #5865f2;
+  border-radius: 999px;
+  padding: 7px 11px;
+  text-decoration: none;
+  background: #5865f2;
+  color: #fff;
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
 .sister-card {
   margin-top: 12px;
   border: 1px solid var(--line);

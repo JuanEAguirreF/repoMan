@@ -35,6 +35,8 @@ export function PublicCatalogPage() {
   const [search, setSearch] = useState("");
   const { t } = useI18n();
   const cafeImageUrl = (import.meta.env.VITE_CAFE_IMAGE_URL as string | undefined)?.trim();
+  const discordImageUrl = (import.meta.env.VITE_DISCORD_IMAGE_URL as string | undefined)?.trim();
+  const discordInviteUrl = ((import.meta.env.VITE_DISCORD_INVITE_URL as string | undefined)?.trim() || "https://discord.com");
   const sisterPlatformUrl = ((import.meta.env.VITE_SISTER_PLATFORM_URL as string | undefined)?.trim() ||
     "https://ideas.comunidaddelmanga.com");
 
@@ -198,6 +200,15 @@ export function PublicCatalogPage() {
               rel="noopener noreferrer"
             >
               {t.supportCta}
+            </a>
+          </div>
+
+          <div className="discord-card">
+            {discordImageUrl && <img src={discordImageUrl} alt="" className="discord-image" aria-hidden="true" />}
+            <strong>{t.discordTitle}</strong>
+            <p>{t.discordLead}</p>
+            <a className="discord-link" href={discordInviteUrl} target="_blank" rel="noopener noreferrer">
+              {t.discordCta}
             </a>
           </div>
         </aside>
