@@ -69,7 +69,7 @@ export function PublicFileDetailPage() {
 
   const shareMessage = currentItem.has_backup
     ? `'${currentItem.title}'. Esta obra está conservada actualmente en nuestra web.`
-    : `¿Reconoces esta obra? '${currentItem.title}' si lo tienes descargado puedes compartirlo con nosotros para su conservación.`;
+    : `¿Reconoces esta obra? '${currentItem.title}'. Si la tienes descargada, o crees que alguien más puede tenerla, comparte esta página con esa persona para ayudar a conservarla.`;
 
   async function shareEntry() {
     const url = window.location.href;
@@ -114,19 +114,30 @@ export function PublicFileDetailPage() {
               <dd>{new Date(currentItem.created_at).toLocaleDateString()}</dd>
             </div>
           </dl>
-          {!currentItem.has_backup && (
-            <p className="detail-note">
-              {t.noBackupDetail}{" "}
-              <a href={discordInviteUrl} target="_blank" rel="noopener noreferrer">
-                {t.discordCta}
-              </a>
-            </p>
-          )}
-          <p className="detail-note">{t.detailNotice}</p>
-          <button type="button" className="chip-btn" onClick={shareEntry}>
-            {t.shareEntry}
-          </button>
-          {shareStatus && <p className="detail-note">{shareStatus}</p>}
+          <div className="detail-actions-panel">
+            {!currentItem.has_backup && (
+              <div className="detail-backup-callout">
+                <p className="detail-note">{t.noBackupDetail}</p>
+                <div className="detail-action-buttons">
+                  <a className="detail-discord-link" href={discordInviteUrl} target="_blank" rel="noopener noreferrer">
+                    {t.discordCta}
+                  </a>
+                  <button type="button" className="chip-btn detail-share-btn" onClick={shareEntry}>
+                    {t.shareEntry}
+                  </button>
+                </div>
+              </div>
+            )}
+            <p className="detail-note">{t.detailNotice}</p>
+            {currentItem.has_backup && (
+              <div className="detail-share-row">
+                <button type="button" className="chip-btn detail-share-btn" onClick={shareEntry}>
+                  {t.shareEntry}
+                </button>
+              </div>
+            )}
+            {shareStatus && <span className="detail-share-status">{shareStatus}</span>}
+          </div>
         </div>
       </div>
     </section>

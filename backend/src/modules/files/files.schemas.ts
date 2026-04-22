@@ -12,6 +12,8 @@ export const fileMetadataSchema = z.object({
 export const allowedFileMimes = new Set([
   "application/pdf",
   "application/zip",
+  "application/x-zip-compressed",
+  "application/x-zip",
   "application/vnd.comicbook+zip",
   "application/x-cbz",
   "application/vnd.rar",

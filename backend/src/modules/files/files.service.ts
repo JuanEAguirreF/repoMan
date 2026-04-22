@@ -27,12 +27,19 @@ export type UploadedFileInput = {
   buffer: Buffer<ArrayBufferLike>;
 };
 
+function normalizeMimeType(value: string): string {
+  return value.toLowerCase().split(";")[0].trim();
+}
+
 export async function createFileUpload(fastify: FastifyInstance, params: {
   ownerUserId: string;
   metadata: Record<string, string>;
   mainFile?: UploadedFileInput;
   coverFile: UploadedFileInput;
 }) {
+  const normalizedCoverMime = normalizeMimeType(params.coverFile.mimetype);
+  const normalizedMainMime = params.mainFile ? normalizeMimeType(params.mainFile.mimetype) : "";
+
   const parsedMetadata = fileMetadataSchema.parse({
     title: params.metadata.title,
     description: params.metadata.description,
@@ -42,7 +49,7 @@ export async function createFileUpload(fastify: FastifyInstance, params: {
     extraMetadata: params.metadata.extraMetadata
   });
 
-  if (!allowedCoverMimes.has(params.coverFile.mimetype)) {
+  if (!allowedCoverMimes.has(normalizedCoverMime)) {
     throw new Error("Unsupported cover image type");
   }
   if (params.coverFile.buffer.length > env.MAX_COVER_SIZE_BYTES) {
@@ -54,15 +61,14 @@ export async function createFileUpload(fastify: FastifyInstance, params: {
   }
 
   if (params.mainFile) {
-    if (!allowedFileMimes.has(params.mainFile.mimetype)) {
-      throw new Error("Unsupported main file type");
-    }
     const fileExt = path.extname(params.mainFile.filename || "").toLowerCase();
     if (!allowedFileExtensions.has(fileExt)) {
-      throw new Error("Unsupported main file extension");
+      throw new Error(`Unsupported main file extension (${fileExt || "none"})`);
     }
-    if (params.mainFile.mimetype === "application/octet-stream" && ![".cbz", ".cbr"].includes(fileExt)) {
-      throw new Error("Unsupported main file type");
+    // Some clients (especially local/browser uploads) send generic octet-stream.
+    // In that case we trust the strict extension allow-list already enforced above.
+    if (!allowedFileMimes.has(normalizedMainMime)) {
+      throw new Error(`Unsupported main file type (${normalizedMainMime || "none"})`);
     }
   }
 
@@ -71,7 +77,7 @@ export async function createFileUpload(fastify: FastifyInstance, params: {
         storageRoot: env.STORAGE_ROOT,
         subdir: "protected",
         filename: params.mainFile.filename,
-        mimetype: params.mainFile.mimetype,
+        mimetype: normalizedMainMime,
         buffer: params.mainFile.buffer,
         maxBytes: env.MAX_FILE_SIZE_BYTES
       })
@@ -98,7 +104,7 @@ export async function createFileUpload(fastify: FastifyInstance, params: {
     stored_filename: savedMain.storedFilename,
     file_path: savedMain.relativePath,
     cover_image_path: uploadedCover.url,
-    mime_type: params.mainFile?.mimetype ?? "application/x-manga-metadata-only",
+    mime_type: params.mainFile ? normalizedMainMime : "application/x-manga-metadata-only",
     file_size_bytes: savedMain.bytes,
     has_backup: Boolean(params.mainFile),
     status: "active",

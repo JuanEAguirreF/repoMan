@@ -602,6 +602,93 @@ a {
   font-size: 0.9rem;
 }
 
+.detail-actions-panel {
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #1b2532;
+  padding: 10px 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.detail-backup-callout {
+  border: 1px dashed rgba(200, 161, 106, 0.35);
+  border-radius: 10px;
+  padding: 9px 10px;
+  background: rgba(200, 161, 106, 0.08);
+}
+
+.detail-backup-callout .detail-note {
+  margin-top: 0;
+}
+
+.detail-discord-link {
+  display: inline-flex;
+  border: 1px solid #7f8bcf;
+  border-radius: 999px;
+  padding: 7px 11px;
+  text-decoration: none;
+  background: #7f8bcf;
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 600;
+  min-height: 36px;
+  align-items: center;
+}
+
+.detail-action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.detail-action-buttons > .detail-discord-link,
+.detail-action-buttons > .detail-share-btn {
+  flex: 0 1 auto;
+  justify-content: center;
+}
+
+.detail-share-btn {
+  border: 1px solid #b78a56;
+  background: #b78a56;
+  color: #18120b;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.detail-discord-link {
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  min-height: 32px;
+}
+
+.detail-share-btn:hover {
+  border-color: #d0a66d;
+  background: #d0a66d;
+  color: #120d08;
+}
+
+.detail-share-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.detail-share-status {
+  color: #d8b482;
+  font-size: 0.84rem;
+}
+
 .upload-page {
   max-width: 980px;
 }
@@ -776,6 +863,60 @@ a {
 .upload-success {
   color: #1d6f45;
   margin: 0;
+}
+
+.success-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 8, 12, 0.62);
+  display: grid;
+  place-items: center;
+  z-index: 60;
+  padding: 16px;
+}
+
+.success-modal-card {
+  width: min(420px, 100%);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+
+.success-modal-card h3 {
+  margin: 0;
+  font-family: "Cinzel", serif;
+}
+
+.success-modal-card p {
+  margin: 8px 0 0;
+  color: var(--muted);
+}
+
+.success-modal-actions {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.success-modal-actions button {
+  border: 1px solid #9a7a4d;
+  background: #9a7a4d;
+  color: #1a130b;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  min-height: 36px;
+}
+
+.success-modal-actions .ghost-btn {
+  border-color: var(--line);
+  background: #253141;
+  color: var(--ink);
 }
 
 .upload-progress-wrap {

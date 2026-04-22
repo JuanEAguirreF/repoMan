@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { apiPostFormWithProgress } from "../../lib/api";
 import { useI18n } from "../../lib/i18n";
 import { useSeo } from "../../lib/seo";
@@ -16,6 +17,7 @@ function getExtension(name: string): string {
 type PublicationMode = "preserve" | "request_backup";
 
 export function NewFilePage() {
+  const navigate = useNavigate();
   const formRef = useRef<HTMLFormElement | null>(null);
   const mainFileInputRef = useRef<HTMLInputElement | null>(null);
   const [status, setStatus] = useState("");
@@ -26,6 +28,8 @@ export function NewFilePage() {
   const [coverFileName, setCoverFileName] = useState("");
   const [coverPreviewUrl, setCoverPreviewUrl] = useState("");
   const [publicationMode, setPublicationMode] = useState<PublicationMode>("preserve");
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [lastUploadedId, setLastUploadedId] = useState<string>("");
   const { t, locale } = useI18n();
 
   useSeo({
@@ -115,9 +119,11 @@ export function NewFilePage() {
     try {
       setIsSubmitting(true);
       setProgress(0);
-      await apiPostFormWithProgress("/files", data, (pct) => setProgress(pct));
+      const response = await apiPostFormWithProgress<{ item?: { id?: string } }>("/files", data, (pct) => setProgress(pct));
       setProgress(100);
       setStatus(t.uploadSuccess);
+      setLastUploadedId(response?.item?.id ?? "");
+      setShowSuccessModal(true);
       form.reset();
       setMainFileName("");
       setCoverFileName("");
@@ -274,6 +280,7 @@ export function NewFilePage() {
               setCoverFileName("");
               setStatus("");
               setError("");
+              setShowSuccessModal(false);
               setProgress(0);
               if (coverPreviewUrl) URL.revokeObjectURL(coverPreviewUrl);
               setCoverPreviewUrl("");
@@ -297,6 +304,35 @@ export function NewFilePage() {
       </form>
       {error && <p className="upload-error">{error}</p>}
       {status && <p className="upload-success">{status}</p>}
+      {showSuccessModal && (
+        <div className="success-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="upload-success-title">
+          <div className="success-modal-card">
+            <h3 id="upload-success-title">{t.uploadSuccessTitle}</h3>
+            <p>{t.uploadSuccessBody}</p>
+            <div className="success-modal-actions">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSuccessModal(false);
+                  navigate(lastUploadedId ? `/files/${lastUploadedId}` : "/dashboard/files");
+                }}
+              >
+                {t.uploadSuccessView}
+              </button>
+              <button
+                type="button"
+                className="ghost-btn"
+                onClick={() => {
+                  setShowSuccessModal(false);
+                  setStatus("");
+                }}
+              >
+                {t.uploadSuccessMore}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
