@@ -43,6 +43,7 @@ function slugify(value: string): string {
 
 async function buildUniqueFileSlug(fastify: FastifyInstance, title: string): Promise<string> {
   const base = slugify(title);
+  type SlugRow = { slug: string | null };
   const { data, error } = await fastify.supabaseAdmin
     .from("files")
     .select("slug")
@@ -51,7 +52,8 @@ async function buildUniqueFileSlug(fastify: FastifyInstance, title: string): Pro
 
   if (error) throw error;
 
-  const existing = new Set((data ?? []).map((row) => String(row.slug)));
+  const slugRows = (data ?? []) as SlugRow[];
+  const existing = new Set(slugRows.map((row: SlugRow) => String(row.slug)));
   if (!existing.has(base)) return base;
 
   let suffix = 2;
