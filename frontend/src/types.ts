@@ -10,8 +10,10 @@ export type SessionUser = {
 export type CatalogFile = {
   id: string;
   title: string;
+  slug: string;
   description: string;
   category: string;
+  content_origin: "manga" | "manhwa" | "manhua";
   tags: string[];
   mime_type: string;
   file_size_bytes: number;

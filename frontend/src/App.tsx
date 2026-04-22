@@ -16,7 +16,7 @@ export function App() {
       <Routes>
         <Route element={<AppShell />}>
           <Route path="/" element={<PublicCatalogPage />} />
-          <Route path="/files/:id" element={<PublicFileDetailPage />} />
+          <Route path="/files/:slug" element={<PublicFileDetailPage />} />
           <Route path="/login" element={<LoginPage />} />
 
           <Route element={<RequireAuth />}>

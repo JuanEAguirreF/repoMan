@@ -32,6 +32,7 @@ export const publicRoutes: FastifyPluginAsync = async (fastify) => {
 
     const items = (await getPublicCatalog(fastify)) as Array<{
       id: string;
+      slug?: string;
       published_at?: string;
       created_at?: string;
     }>;
@@ -40,10 +41,10 @@ export const publicRoutes: FastifyPluginAsync = async (fastify) => {
     const entries = [
       `<url><loc>${escapeXml(`${siteUrl}/`)}</loc><changefreq>daily</changefreq><priority>1.0</priority></url>`,
       ...items.map((item) => {
-        const fileId = String(item.id);
+        const seoPath = String(item.slug || item.id);
         const publishedAt = item.published_at || item.created_at;
         const lastmod = publishedAt ? `<lastmod>${escapeXml(new Date(publishedAt).toISOString())}</lastmod>` : "";
-        return `<url><loc>${escapeXml(`${siteUrl}/files/${fileId}`)}</loc>${lastmod}<changefreq>weekly</changefreq><priority>0.8</priority></url>`;
+        return `<url><loc>${escapeXml(`${siteUrl}/files/${seoPath}`)}</loc>${lastmod}<changefreq>weekly</changefreq><priority>0.8</priority></url>`;
       })
     ].join("");
 

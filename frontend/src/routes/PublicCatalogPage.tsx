@@ -5,6 +5,7 @@ import { useSeo } from "../lib/seo";
 import { CatalogFile } from "../types";
 import { useI18n } from "../lib/i18n";
 import { SpiralHero } from "../components/SpiralHero";
+import { buildPublicFilePath } from "../lib/slug";
 
 function displayFileType(mimeType: string): string {
   const lower = mimeType.toLowerCase();
@@ -67,7 +68,7 @@ export function PublicCatalogPage() {
         id: item.id,
         label: item.title,
         imageUrl: resolveCoverUrl(item.id, item.cover_image_path),
-        href: `/files/${item.id}`
+        href: buildPublicFilePath(item.slug)
       }));
 
       const randomPool = shuffled(source);
@@ -141,6 +142,9 @@ export function PublicCatalogPage() {
                 <div>
                   <h3>{item.title}</h3>
                   <p className="meta-line">{item.category}</p>
+                  <p className="meta-line">
+                    {t.contentOrigin}: {item.content_origin === "manhwa" ? t.contentOriginManhwa : item.content_origin === "manhua" ? t.contentOriginManhua : t.contentOriginManga}
+                  </p>
                   {item.has_backup ? (
                     <>
                       <p className="meta-line">
@@ -155,7 +159,7 @@ export function PublicCatalogPage() {
                       {t.noBackupLabel}
                     </p>
                   )}
-                  <Link className="meta-link" to={`/files/${item.id}`}>
+                  <Link className="meta-link" to={buildPublicFilePath(item.slug)}>
                     {t.viewMetadata}
                   </Link>
                 </div>
@@ -197,23 +201,23 @@ export function PublicCatalogPage() {
           </div>
 
           {topUploaders.length > 0 && (
-            <div className="top-uploaders-card" style={{ background: "var(--surface)", border: "1px solid var(--border)", padding: "16px", borderRadius: "8px", marginTop: "16px" }}>
-              <strong style={{ display: "block", marginBottom: "12px", fontSize: "1rem" }}>{t.topUploadersTitle || "Repormans Destacados"}</strong>
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <div className="top-uploaders-card">
+              <strong>{t.topUploadersTitle || "RepoMans Destacados"}</strong>
+              <div className="top-uploaders-list">
                 {topUploaders.map((u, i) => (
-                  <div key={i}>
+                  <div key={i} className={`top-uploader-row top-uploader-rank-${i + 1}`}>
                     {i === 0 && (
-                      <div style={{ fontSize: "1.2rem", fontWeight: "bold" }}>
-                        🥇 {u.username} <span style={{ opacity: 0.8, marginLeft: "4px" }}>({u.count})</span>
+                      <div>
+                        🥇 {u.username} <span>({u.count})</span>
                       </div>
                     )}
                     {i === 1 && (
-                      <div style={{ fontSize: "1.1rem" }}>
+                      <div>
                         🥈 {u.username}
                       </div>
                     )}
                     {i === 2 && (
-                      <div style={{ fontSize: "1rem" }}>
+                      <div>
                         🥉 {u.username}
                       </div>
                     )}

@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { apiGet, resolveCoverUrl } from "../lib/api";
 import { useSeo } from "../lib/seo";
 import { CatalogFile } from "../types";
 import { useI18n } from "../lib/i18n";
+import { buildPublicFilePath, extractSlugParam } from "../lib/slug";
 
 function displayFileType(mimeType: string): string {
   const lower = mimeType.toLowerCase();
@@ -20,7 +21,8 @@ function displayFileType(mimeType: string): string {
 }
 
 export function PublicFileDetailPage() {
-  const { id } = useParams();
+  const { slug } = useParams();
+  const navigate = useNavigate();
   const [item, setItem] = useState<CatalogFile | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [shareStatus, setShareStatus] = useState<string>("");
@@ -28,12 +30,26 @@ export function PublicFileDetailPage() {
   const discordInviteUrl =
     ((import.meta.env.VITE_DISCORD_INVITE_URL as string | undefined)?.trim() || "https://discord.gg/jURmbDXjnf");
 
+  const fileSlug = slug ? extractSlugParam(slug) : null;
+
   useEffect(() => {
-    if (!id) return;
-    apiGet<{ item: CatalogFile }>(`/public/files/${id}`)
+    if (!fileSlug) {
+      setError(t.detailNotFound);
+      return;
+    }
+    apiGet<{ item: CatalogFile }>(`/public/files/${encodeURIComponent(fileSlug)}`)
       .then((res) => setItem(res.item))
       .catch(() => setError(t.detailNotFound));
-  }, [id]);
+  }, [fileSlug, t.detailNotFound]);
+
+  useEffect(() => {
+    if (!item || !slug) return;
+    const canonicalPath = buildPublicFilePath(item.slug);
+    const currentPath = `/files/${slug}`;
+    if (currentPath !== canonicalPath) {
+      navigate(canonicalPath, { replace: true });
+    }
+  }, [slug, item, navigate]);
 
   const coverImageUrl = item ? resolveCoverUrl(item.id, item.cover_image_path) : undefined;
   const safeDescription = item ? item.description.slice(0, 160) : t.detailLoading;
@@ -41,7 +57,7 @@ export function PublicFileDetailPage() {
   useSeo({
     title: item ? `${item.title} - ${t.viewMetadata}` : t.detailLoading,
     description: safeDescription,
-    path: id ? `/files/${id}` : "/",
+    path: item ? buildPublicFilePath(item.slug) : "/",
     lang: locale,
     index: true,
     follow: true,
@@ -104,6 +120,16 @@ export function PublicFileDetailPage() {
             <div>
               <dt>{t.fileType}</dt>
               <dd>{currentItem.has_backup ? displayFileType(currentItem.mime_type) : t.noBackupLabel}</dd>
+            </div>
+            <div>
+              <dt>{t.contentOrigin}</dt>
+              <dd>
+                {currentItem.content_origin === "manhwa"
+                  ? t.contentOriginManhwa
+                  : currentItem.content_origin === "manhua"
+                    ? t.contentOriginManhua
+                    : t.contentOriginManga}
+              </dd>
             </div>
             <div>
               <dt>{t.fileSize}</dt>

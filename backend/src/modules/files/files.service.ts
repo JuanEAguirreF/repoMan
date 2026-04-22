@@ -31,6 +31,36 @@ function normalizeMimeType(value: string): string {
   return value.toLowerCase().split(";")[0].trim();
 }
 
+function slugify(value: string): string {
+  const normalized = value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return normalized || "item";
+}
+
+async function buildUniqueFileSlug(fastify: FastifyInstance, title: string): Promise<string> {
+  const base = slugify(title);
+  const { data, error } = await fastify.supabaseAdmin
+    .from("files")
+    .select("slug")
+    .ilike("slug", `${base}%`)
+    .limit(500);
+
+  if (error) throw error;
+
+  const existing = new Set((data ?? []).map((row) => String(row.slug)));
+  if (!existing.has(base)) return base;
+
+  let suffix = 2;
+  while (existing.has(`${base}-${suffix}`)) {
+    suffix += 1;
+  }
+  return `${base}-${suffix}`;
+}
+
 export async function createFileUpload(fastify: FastifyInstance, params: {
   ownerUserId: string;
   metadata: Record<string, string>;
@@ -44,6 +74,7 @@ export async function createFileUpload(fastify: FastifyInstance, params: {
     title: params.metadata.title,
     description: params.metadata.description,
     category: params.metadata.category,
+    contentOrigin: params.metadata.contentOrigin,
     tags: params.metadata.tags,
     uploadDate: params.metadata.uploadDate,
     extraMetadata: params.metadata.extraMetadata
@@ -93,12 +124,15 @@ export async function createFileUpload(fastify: FastifyInstance, params: {
   });
 
   const parsedExtraMetadata = parsedMetadata.extraMetadata ? JSON.parse(parsedMetadata.extraMetadata) : {};
+  const uniqueSlug = await buildUniqueFileSlug(fastify, parsedMetadata.title);
 
   const created = await createFileRecord(fastify, {
     owner_user_id: params.ownerUserId,
     title: parsedMetadata.title,
+    slug: uniqueSlug,
     description: parsedMetadata.description,
     category: parsedMetadata.category,
+    content_origin: parsedMetadata.contentOrigin,
     tags: parsedMetadata.tags ? parsedMetadata.tags.split(",").map((t) => t.trim()).filter(Boolean) : [],
     original_filename: savedMain.originalFilename,
     stored_filename: savedMain.storedFilename,
@@ -113,6 +147,7 @@ export async function createFileUpload(fastify: FastifyInstance, params: {
     published_at: new Date().toISOString(),
     extra_metadata: {
       ...parsedExtraMetadata,
+      content_origin: parsedMetadata.contentOrigin,
       upload_date: parsedMetadata.uploadDate ?? null
     }
   });

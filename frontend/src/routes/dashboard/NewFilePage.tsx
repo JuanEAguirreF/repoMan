@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { apiPostFormWithProgress } from "../../lib/api";
 import { useI18n } from "../../lib/i18n";
 import { useSeo } from "../../lib/seo";
+import { buildPublicFilePath } from "../../lib/slug";
 
 const MAX_MAIN_FILE_BYTES = 50 * 1024 * 1024;
 const MAX_COVER_BYTES = 5 * 1024 * 1024;
@@ -15,6 +16,7 @@ function getExtension(name: string): string {
 }
 
 type PublicationMode = "preserve" | "request_backup";
+type ContentOrigin = "manga" | "manhwa" | "manhua";
 
 export function NewFilePage() {
   const navigate = useNavigate();
@@ -29,7 +31,7 @@ export function NewFilePage() {
   const [coverPreviewUrl, setCoverPreviewUrl] = useState("");
   const [publicationMode, setPublicationMode] = useState<PublicationMode>("preserve");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [lastUploadedId, setLastUploadedId] = useState<string>("");
+  const [lastUploadedSlug, setLastUploadedSlug] = useState<string>("");
   const { t, locale } = useI18n();
 
   useSeo({
@@ -86,6 +88,7 @@ export function NewFilePage() {
     const description = String(data.get("description") || "").trim();
     const category = String(data.get("category") || "").trim();
     const extraMetadata = String(data.get("extraMetadata") || "").trim();
+    const contentOrigin = String(data.get("contentOrigin") || "").trim() as ContentOrigin;
     const mainFile = data.get("file");
     const coverImage = data.get("coverImage");
 
@@ -93,6 +96,7 @@ export function NewFilePage() {
     if (!description) return setError(t.validationDescriptionRequired);
     if (!category) return setError(t.validationCategoryRequired);
     if (!(categories as string[]).includes(category)) return setError(t.validationCategoryInvalid);
+    if (!["manga", "manhwa", "manhua"].includes(contentOrigin)) return setError(t.validationContentOriginRequired);
     if (!(coverImage instanceof File) || coverImage.size <= 0) return setError(t.validationCoverRequired);
 
     const hasMainFile = mainFile instanceof File && mainFile.size > 0;
@@ -119,10 +123,10 @@ export function NewFilePage() {
     try {
       setIsSubmitting(true);
       setProgress(0);
-      const response = await apiPostFormWithProgress<{ item?: { id?: string } }>("/files", data, (pct) => setProgress(pct));
+      const response = await apiPostFormWithProgress<{ item?: { id?: string; slug?: string } }>("/files", data, (pct) => setProgress(pct));
       setProgress(100);
       setStatus(t.uploadSuccess);
-      setLastUploadedId(response?.item?.id ?? "");
+      setLastUploadedSlug(response?.item?.slug ?? "");
       setShowSuccessModal(true);
       form.reset();
       setMainFileName("");
@@ -211,6 +215,13 @@ export function NewFilePage() {
               ))}
             </datalist>
 
+            <label htmlFor="contentOrigin">{t.fieldContentOrigin}</label>
+            <select id="contentOrigin" name="contentOrigin" defaultValue="manga" required>
+              <option value="manga">{t.contentOriginManga}</option>
+              <option value="manhwa">{t.contentOriginManhwa}</option>
+              <option value="manhua">{t.contentOriginManhua}</option>
+            </select>
+
             <label htmlFor="tags">{t.fieldTags}</label>
             <input id="tags" name="tags" placeholder={t.placeholderTags} />
 
@@ -224,11 +235,23 @@ export function NewFilePage() {
             <legend>{t.newFileAssetsSection}</legend>
 
             <label htmlFor="file">{t.fieldMainFile}</label>
+            <label
+              htmlFor="file"
+              className={`file-upload-control ${publicationMode === "request_backup" ? "is-disabled" : ""}`}
+            >
+              <span className="file-upload-icon" aria-hidden="true">⤴</span>
+              <span className="file-upload-copy">
+                <strong>{mainFileName ? t.filePickerReplace : t.filePickerClickHint}</strong>
+                <span>{mainFileName || t.filePickerNoFile}</span>
+                <em>{t.filePickerMainDropHint}</em>
+              </span>
+            </label>
             <input
               ref={mainFileInputRef}
               id="file"
               name="file"
               type="file"
+              className="file-input-native"
               disabled={publicationMode === "request_backup"}
               accept=".pdf,.zip,.cbz,.cbr,.txt,.doc,.docx"
               onChange={(e) => setMainFileName(e.currentTarget.files?.[0]?.name ?? "")}
@@ -240,10 +263,19 @@ export function NewFilePage() {
             </small>
 
             <label htmlFor="coverImage">{t.fieldCoverImage}</label>
+            <label htmlFor="coverImage" className="file-upload-control">
+              <span className="file-upload-icon" aria-hidden="true">🖼</span>
+              <span className="file-upload-copy">
+                <strong>{coverFileName ? t.filePickerReplace : t.filePickerClickHint}</strong>
+                <span>{coverFileName || t.filePickerNoFile}</span>
+                <em>{t.filePickerCoverDropHint}</em>
+              </span>
+            </label>
             <input
               id="coverImage"
               name="coverImage"
               type="file"
+              className="file-input-native"
               required
               accept=".png,.jpg,.jpeg,.webp"
               onChange={(e) => {
@@ -314,7 +346,7 @@ export function NewFilePage() {
                 type="button"
                 onClick={() => {
                   setShowSuccessModal(false);
-                  navigate(lastUploadedId ? `/files/${lastUploadedId}` : "/dashboard/files");
+                  navigate(lastUploadedSlug ? buildPublicFilePath(lastUploadedSlug) : "/dashboard/files");
                 }}
               >
                 {t.uploadSuccessView}

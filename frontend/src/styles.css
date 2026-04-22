@@ -522,6 +522,79 @@ a {
   font-weight: 600;
 }
 
+.top-uploaders-card {
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px;
+  background: linear-gradient(180deg, #1c2633 0%, #171f2b 100%);
+  position: relative;
+}
+
+.top-uploaders-card::before {
+  content: "HALL OF FAME";
+  position: absolute;
+  right: 10px;
+  top: 8px;
+  font-size: 0.58rem;
+  letter-spacing: 0.16em;
+  color: rgba(232, 220, 200, 0.22);
+}
+
+.top-uploaders-card strong {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 0.96rem;
+}
+
+.top-uploaders-card strong::before {
+  content: "✦ ";
+  color: #d8b482;
+}
+
+.top-uploaders-list {
+  display: grid;
+  gap: 8px;
+}
+
+.top-uploader-row {
+  border: 1px solid rgba(200, 161, 106, 0.28);
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: rgba(17, 24, 34, 0.58);
+}
+
+.top-uploader-row div {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.top-uploader-row span {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.top-uploader-rank-1 {
+  border-color: #b6925d;
+  background: linear-gradient(180deg, rgba(182, 146, 93, 0.2) 0%, rgba(17, 24, 34, 0.6) 100%);
+  font-size: 1.03rem;
+  font-weight: 700;
+}
+
+.top-uploader-rank-2 {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.top-uploader-rank-3 {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
 .detail-card {
   border: 1px solid var(--line);
   border-radius: 16px;
@@ -759,6 +832,82 @@ a {
 .upload-fieldset small {
   color: var(--muted);
   font-size: 0.78rem;
+}
+
+.file-input-native {
+  position: absolute;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.file-upload-control {
+  border: 2px dashed #8d6a3f;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #1f2b3a 0%, #17202b 100%);
+  padding: 14px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: border-color 120ms ease, transform 120ms ease, background 120ms ease, box-shadow 120ms ease;
+  min-height: 76px;
+}
+
+.file-upload-control:hover {
+  border-color: #caa06a;
+  transform: translateY(-1px);
+  background: linear-gradient(180deg, #263447 0%, #1d2734 100%);
+  box-shadow: 0 0 0 3px rgba(202, 160, 106, 0.2);
+}
+
+.file-upload-control.is-disabled {
+  opacity: 0.62;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.file-upload-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 9px;
+  border: 1px solid rgba(200, 161, 106, 0.5);
+  background: rgba(200, 161, 106, 0.16);
+  display: grid;
+  place-items: center;
+  font-size: 1.08rem;
+  color: #f0d2a4;
+  flex: 0 0 auto;
+}
+
+.file-upload-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.file-upload-copy strong {
+  font-size: 0.92rem;
+  color: #f0dfc7;
+}
+
+.file-upload-copy span {
+  font-size: 0.81rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-upload-copy em {
+  font-style: normal;
+  color: #d3be9d;
+  font-size: 0.75rem;
+  opacity: 0.95;
 }
 
 .publication-mode-fieldset {
@@ -1314,7 +1463,8 @@ a {
   .stat-box,
   .sister-card,
   .kofi-card,
-  .discord-card {
+  .discord-card,
+  .top-uploaders-card {
     padding: 9px;
     border-radius: 11px;
   }
@@ -1324,6 +1474,10 @@ a {
   .sister-link {
     min-height: 36px;
     align-items: center;
+  }
+
+  .top-uploader-row div {
+    white-space: normal;
   }
 
   .detail-card {

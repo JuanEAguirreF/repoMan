@@ -4,6 +4,7 @@ export const fileMetadataSchema = z.object({
   title: z.string().min(1).max(200),
   description: z.string().min(1).max(3000),
   category: z.string().min(1).max(120),
+  contentOrigin: z.enum(["manga", "manhwa", "manhua"]).default("manga"),
   tags: z.string().optional().default(""),
   uploadDate: z.string().optional(),
   extraMetadata: z.string().optional()
