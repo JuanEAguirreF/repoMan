@@ -3,6 +3,7 @@ import { AppShell } from "./components/AppShell";
 import { LoginPage } from "./routes/LoginPage";
 import { PublicCatalogPage } from "./routes/PublicCatalogPage";
 import { PublicFileDetailPage } from "./routes/PublicFileDetailPage";
+import { AboutRepoManPage } from "./routes/AboutRepoManPage";
 import { RequireAuth } from "./routes/RequireAuth";
 import { RequireRole } from "./routes/RequireRole";
 import { MyFilesPage } from "./routes/dashboard/MyFilesPage";
@@ -16,6 +17,7 @@ export function App() {
       <Routes>
         <Route element={<AppShell />}>
           <Route path="/" element={<PublicCatalogPage />} />
+          <Route path="/que-es-repoman" element={<AboutRepoManPage />} />
           <Route path="/files/:slug" element={<PublicFileDetailPage />} />
           <Route path="/login" element={<LoginPage />} />
 

@@ -121,6 +121,8 @@ export function PublicCatalogPage() {
         badge={t.catalogMetaOnly}
         title={t.catalogTitle}
         description={t.catalogLead}
+        ctaSecondaryLabel="¿Qué es RepoMan?"
+        ctaSecondaryHref="/que-es-repoman"
         ctaLabel={t.heroCta}
         ctaHref="#catalog-content"
       />

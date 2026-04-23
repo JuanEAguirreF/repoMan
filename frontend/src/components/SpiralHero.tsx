@@ -15,6 +15,8 @@ type Props = {
   description: string;
   ctaLabel: string;
   ctaHref: string;
+  ctaSecondaryLabel?: string;
+  ctaSecondaryHref?: string;
 };
 
 type HoverState = {
@@ -23,7 +25,16 @@ type HoverState = {
   y: number;
 } | null;
 
-export function SpiralHero({ items, badge, title, description, ctaLabel, ctaHref }: Props) {
+export function SpiralHero({
+  items,
+  badge,
+  title,
+  description,
+  ctaLabel,
+  ctaHref,
+  ctaSecondaryLabel,
+  ctaSecondaryHref
+}: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [hover, setHover] = useState<HoverState>(null);
@@ -209,9 +220,16 @@ export function SpiralHero({ items, badge, title, description, ctaLabel, ctaHref
         <span className="mini-pill">{badge}</span>
         <h2>{title}</h2>
         <p>{description}</p>
-        <a className="hero-cta" href={ctaHref}>
-          {ctaLabel}
-        </a>
+        <div className="hero-cta-row">
+          {ctaSecondaryLabel && ctaSecondaryHref && (
+            <a className="hero-cta ghost" href={ctaSecondaryHref}>
+              {ctaSecondaryLabel}
+            </a>
+          )}
+          <a className="hero-cta" href={ctaHref}>
+            {ctaLabel}
+          </a>
+        </div>
       </div>
       {hover && (
         <div className="spiral-tooltip" style={{ left: hover.x, top: hover.y }}>
