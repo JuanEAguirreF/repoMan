@@ -6,6 +6,8 @@ export function AboutRepoManPage() {
   const discordImageUrl = (import.meta.env.VITE_DISCORD_IMAGE_URL as string | undefined)?.trim();
   const discordInviteUrl =
     ((import.meta.env.VITE_DISCORD_INVITE_URL as string | undefined)?.trim() || "https://discord.gg/jURmbDXjnf");
+  const siteUrl = ((import.meta.env.VITE_SITE_URL as string | undefined)?.trim().replace(/\/$/, "") ||
+    "https://repoman.comunidaddelmanga.com");
 
   useSeo({
     title: "¿Qué es RepoMan?",
@@ -15,14 +17,30 @@ export function AboutRepoManPage() {
     lang: locale,
     index: true,
     follow: true,
-    type: "website"
+    type: "website",
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "AboutPage",
+      name: "¿Qué es RepoMan?",
+      inLanguage: locale,
+      url: `${siteUrl}/que-es-repoman`,
+      isPartOf: {
+        "@type": "WebSite",
+        name: "RepoMan",
+        url: siteUrl
+      },
+      about: {
+        "@type": "Thing",
+        name: "Preservación de manga, manhwa y manhua"
+      }
+    }
   });
 
   return (
     <section className="about-page">
       <article className="about-hero">
         <span className="about-kicker">REPO ARCHIVE</span>
-        <h1>¿Qué es RepoMan?</h1>
+        <h1>📚 ¿Qué es RepoMan?</h1>
         <p>
           RepoMan es una plataforma de preservación: organizamos metadatos, portadas y respaldo de archivos para que
           obras de manga, manhwa y manhua no se pierdan con el tiempo. El catálogo público muestra información y estado
@@ -32,7 +50,7 @@ export function AboutRepoManPage() {
 
       <div className="about-grid">
         <article className="about-card">
-          <h2>Qué hacemos</h2>
+          <h2>🧭 ¿Qué hacemos?</h2>
           <div className="about-pill-row">
             <span className="about-pill">Catalogación de obras</span>
             <span className="about-pill">Preservación de respaldo</span>
@@ -42,7 +60,7 @@ export function AboutRepoManPage() {
         </article>
 
         <article className="about-card">
-          <h2>Cómo participar</h2>
+          <h2>🤝 ¿Cómo participar?</h2>
           <ol className="about-steps">
             <li>
               <strong>Solicita acceso por Discord.</strong> El equipo crea tu cuenta.
@@ -58,7 +76,7 @@ export function AboutRepoManPage() {
       </div>
 
       <article className="about-card">
-        <h2>Acceso para colaboradores</h2>
+        <h2>🔐 ¿Cómo solicito acceso como colaborador?</h2>
         <div className="about-discord">
           {discordImageUrl ? (
             <img src={discordImageUrl} alt="Discord Comunidad del Manga" />
@@ -75,6 +93,14 @@ export function AboutRepoManPage() {
             </a>
           </div>
         </div>
+      </article>
+
+      <article className="about-final-cta">
+        <h2>{t.aboutFinalTitle}</h2>
+        <p>{t.aboutFinalLead}</p>
+        <a className="about-discord-cta strong" href={discordInviteUrl} target="_blank" rel="noopener noreferrer">
+          {t.aboutFinalCta}
+        </a>
       </article>
     </section>
   );

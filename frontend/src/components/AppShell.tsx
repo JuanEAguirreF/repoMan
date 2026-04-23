@@ -12,6 +12,7 @@ export function AppShell() {
   const headerImageUrl = (import.meta.env.VITE_HEADER_IMAGE_URL as string | undefined)?.trim();
   const sisterPlatformUrl = ((import.meta.env.VITE_SISTER_PLATFORM_URL as string | undefined)?.trim() ||
     "https://ideas.comunidaddelmanga.com");
+  const discordInviteUrl = ((import.meta.env.VITE_DISCORD_INVITE_URL as string | undefined)?.trim() || "https://discord.gg/jURmbDXjnf");
 
   useEffect(() => {
     let active = true;
@@ -57,6 +58,9 @@ export function AppShell() {
           <Link className="chip-link" to="/">
             {t.navPublicCatalog}
           </Link>
+          <Link className="chip-link" to="/que-es-repoman">
+            {t.navAbout}
+          </Link>
           {me ? (
             <>
               <Link className="chip-link" to="/dashboard/files">
@@ -95,8 +99,30 @@ export function AppShell() {
         <Outlet />
       </main>
       <footer className="site-footer" role="contentinfo">
-        <p>{t.footerDisclaimerLine1}</p>
-        <p>{t.footerDisclaimerLine2}</p>
+        <div className="site-footer-grid">
+          <section>
+            <h3>{t.footerProjectTitle}</h3>
+            <nav className="site-footer-links" aria-label={t.footerProjectTitle}>
+              <Link to="/que-es-repoman">{t.footerLinkAbout}</Link>
+              <Link to="/que-es-repoman">{t.footerLinkHowToJoin}</Link>
+              <Link to="/faq">{t.footerLinkFaq}</Link>
+            </nav>
+          </section>
+          <section>
+            <h3>{t.footerCommunityTitle}</h3>
+            <nav className="site-footer-links" aria-label={t.footerCommunityTitle}>
+              <a href={discordInviteUrl} target="_blank" rel="noopener noreferrer">{t.footerLinkDiscord}</a>
+              <a href={sisterPlatformUrl} target="_blank" rel="noopener noreferrer">{t.footerLinkIdeas}</a>
+              <a href="https://ko-fi.com/comunidaddelmanga" target="_blank" rel="noopener noreferrer">{t.footerLinkSupport}</a>
+            </nav>
+          </section>
+          <section>
+            <h3>{t.footerOpsTitle}</h3>
+            <p>{t.footerOpsLine1}</p>
+            <p>{t.footerOpsLine2}</p>
+          </section>
+        </div>
+        <div className="site-footer-bottom">© {new Date().getFullYear()} · {t.footerBottom}</div>
       </footer>
     </div>
   );

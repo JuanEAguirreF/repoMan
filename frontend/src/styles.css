@@ -870,10 +870,12 @@ a {
 .about-pill {
   border: 1px solid var(--line);
   border-radius: 999px;
-  padding: 6px 10px;
+  padding: 8px 12px;
   background: #212b37;
   color: #eadfcf;
-  font-size: 0.8rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.25;
 }
 
 .about-discord {
@@ -900,6 +902,78 @@ a {
   color: #fff;
   font-size: 0.84rem;
   font-weight: 700;
+}
+
+.about-discord-cta.strong {
+  background: linear-gradient(90deg, #6f7ed3 0%, #8f9ce8 100%);
+  border-color: #8f9ce8;
+  font-size: 0.9rem;
+  padding: 10px 14px;
+}
+
+.about-final-cta {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: linear-gradient(140deg, #232f40 0%, #192331 100%);
+  padding: 16px;
+}
+
+.about-final-cta h2 {
+  margin: 0;
+  font-family: "Cardo", serif;
+}
+
+.about-final-cta p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  max-width: 74ch;
+}
+
+.faq-page {
+  display: grid;
+  gap: 14px;
+}
+
+.faq-hero {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: linear-gradient(140deg, #1f2a38 0%, #151d28 100%);
+  padding: 18px;
+}
+
+.faq-hero h1 {
+  margin: 0;
+  font-family: "Cinzel", serif;
+}
+
+.faq-hero p {
+  margin: 10px 0 0;
+  color: var(--muted);
+  max-width: 72ch;
+}
+
+.faq-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.faq-card {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+  padding: 14px;
+}
+
+.faq-card h2 {
+  margin: 0 0 8px;
+  font-size: 1.03rem;
+  font-family: "Cardo", serif;
+}
+
+.faq-card p {
+  margin: 0;
+  color: var(--muted);
 }
 
 .upload-page {
@@ -1357,6 +1431,33 @@ a {
   color: rgba(232, 220, 200, 0.24);
 }
 
+.site-footer-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.site-footer h3 {
+  margin: 0 0 8px;
+  font-size: 0.9rem;
+  color: #e7d4b8;
+}
+
+.site-footer-links {
+  display: grid;
+  gap: 6px;
+}
+
+.site-footer-links a {
+  text-decoration: none;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.site-footer-links a:hover {
+  color: var(--accent-2);
+}
+
 .site-footer p {
   margin: 0;
   color: var(--muted);
@@ -1366,6 +1467,14 @@ a {
 
 .site-footer p+p {
   margin-top: 6px;
+}
+
+.site-footer-bottom {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(232, 220, 200, 0.18);
+  color: var(--muted);
+  font-size: 0.78rem;
 }
 
 @media (max-width: 1120px) {
@@ -1417,6 +1526,10 @@ a {
   }
 
   .about-discord {
+    grid-template-columns: 1fr;
+  }
+
+  .faq-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -1712,6 +1825,11 @@ a {
     margin-top: 16px;
     padding: 12px;
     border-radius: 11px;
+  }
+
+  .site-footer-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
   }
 
   .site-footer p {
