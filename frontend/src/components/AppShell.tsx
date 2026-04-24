@@ -81,18 +81,22 @@ export function AppShell() {
         </Link>
         <nav className="nav-links">
           <Link className="chip-link" to="/">
-            {t.navPublicCatalog}
+            <span className="nav-glyph" aria-hidden="true">⌘</span>
+            <span>{t.navPublicCatalog}</span>
           </Link>
           <Link className="chip-link" to="/que-es-repoman">
-            {t.navAbout}
+            <span className="nav-glyph" aria-hidden="true">◈</span>
+            <span>{t.navAbout}</span>
           </Link>
           {me ? (
             <>
               <Link className="chip-link" to="/dashboard/files">
-                {t.navMyFiles}
+                <span className="nav-glyph" aria-hidden="true">⌗</span>
+                <span>{t.navMyFiles}</span>
               </Link>
               <Link className="chip-link" to="/dashboard/new">
-                {t.navNewFile}
+                <span className="nav-glyph" aria-hidden="true">✦</span>
+                <span>{t.navNewFile}</span>
               </Link>
               {me.role === "super_admin" ? (
                 <div className="nav-account" ref={accountMenuRef}>
@@ -102,26 +106,33 @@ export function AppShell() {
                     aria-expanded={accountOpen}
                     aria-haspopup="menu"
                   >
-                    {t.navMyAccount}
+                    <span className="nav-glyph" aria-hidden="true">⌬</span>
+                    <span>{t.navMyAccount}</span>
                   </button>
                   {accountOpen && (
                     <div className="nav-account-menu" role="menu">
                       <Link className="nav-account-item" to="/dashboard/admin/publications" onClick={() => setAccountOpen(false)}>
+                        <span className="nav-glyph" aria-hidden="true">⍟</span>
                         {t.navAdminPublications}
                       </Link>
                       <Link className="nav-account-item" to="/dashboard/admin/deletions" onClick={() => setAccountOpen(false)}>
+                        <span className="nav-glyph" aria-hidden="true">⌫</span>
                         {t.navAdminRequests}
                       </Link>
                       <Link className="nav-account-item" to="/dashboard/admin/edits" onClick={() => setAccountOpen(false)}>
+                        <span className="nav-glyph" aria-hidden="true">⌥</span>
                         {t.navAdminEdits}
                       </Link>
                       <Link className="nav-account-item" to="/dashboard/admin/audit" onClick={() => setAccountOpen(false)}>
+                        <span className="nav-glyph" aria-hidden="true">◇</span>
                         {t.navAdminAudit}
                       </Link>
                       <Link className="nav-account-item" to="/dashboard/admin/files" onClick={() => setAccountOpen(false)}>
+                        <span className="nav-glyph" aria-hidden="true">◉</span>
                         {t.navAllFiles}
                       </Link>
                       <button className="nav-account-item nav-account-logout" onClick={logout}>
+                        <span className="nav-glyph" aria-hidden="true">⊖</span>
                         {t.navLogout}
                       </button>
                     </div>
@@ -129,17 +140,20 @@ export function AppShell() {
                 </div>
               ) : (
                 <button className="chip-btn" onClick={logout}>
-                  {t.navLogout}
+                  <span className="nav-glyph" aria-hidden="true">⊖</span>
+                  <span>{t.navLogout}</span>
                 </button>
               )}
             </>
           ) : (
             <>
               <a className="chip-link" href={sisterPlatformUrl} target="_blank" rel="noopener noreferrer">
-                {t.navReadOnline}
+                <span className="nav-glyph" aria-hidden="true">⌁</span>
+                <span>{t.navReadOnline}</span>
               </a>
               <Link className="chip-link" to="/login">
-                {t.navLogin}
+                <span className="nav-glyph" aria-hidden="true">⊙</span>
+                <span>{t.navLogin}</span>
               </Link>
             </>
           )}

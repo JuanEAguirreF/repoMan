@@ -89,7 +89,7 @@ a {
   margin-bottom: 22px;
   background: linear-gradient(120deg, #1f2834 0%, #18212d 100%);
   box-shadow: var(--shadow);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .shell-header::before {
@@ -169,10 +169,14 @@ a {
   font-family: inherit;
 }
 
-.shell-header .nav-links .chip-link::before,
-.shell-header .nav-links .chip-btn::before {
-  content: "⌘ ";
+.nav-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1em;
+  margin-right: 3px;
   color: #d8b482;
+  line-height: 1;
 }
 
 .nav-account {
@@ -214,11 +218,6 @@ a {
   font-family: inherit;
   cursor: pointer;
   text-align: left;
-}
-
-.nav-account-item::before {
-  content: "⌘";
-  color: #d8b482;
 }
 
 .nav-account-item:hover {
