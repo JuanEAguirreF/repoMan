@@ -5,7 +5,7 @@ import { useI18n } from "../../lib/i18n";
 import { useSeo } from "../../lib/seo";
 import { buildPublicFilePath } from "../../lib/slug";
 
-const MAX_MAIN_FILE_BYTES = 50 * 1024 * 1024;
+const MAX_MAIN_FILE_BYTES = 200 * 1024 * 1024;
 const MAX_COVER_BYTES = 5 * 1024 * 1024;
 const ALLOWED_MAIN_EXTENSIONS = [".pdf", ".zip", ".cbz", ".cbr", ".txt", ".doc", ".docx"];
 const ALLOWED_COVER_EXTENSIONS = [".png", ".jpg", ".jpeg", ".webp"];
