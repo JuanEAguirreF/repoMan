@@ -1,11 +1,11 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { apiPostFormWithProgress } from "../../lib/api";
+import { apiGet, apiPostFormWithProgress } from "../../lib/api";
 import { useI18n } from "../../lib/i18n";
 import { useSeo } from "../../lib/seo";
 import { buildPublicFilePath } from "../../lib/slug";
 
-const MAX_MAIN_FILE_BYTES = 200 * 1024 * 1024;
+const DEFAULT_MAX_MAIN_FILE_BYTES = 200 * 1024 * 1024;
 const MAX_COVER_BYTES = 5 * 1024 * 1024;
 const ALLOWED_MAIN_EXTENSIONS = [".pdf", ".zip", ".cbz", ".cbr", ".txt", ".doc", ".docx"];
 const ALLOWED_COVER_EXTENSIONS = [".png", ".jpg", ".jpeg", ".webp"];
@@ -32,6 +32,7 @@ export function NewFilePage() {
   const [publicationMode, setPublicationMode] = useState<PublicationMode>("preserve");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [lastUploadedSlug, setLastUploadedSlug] = useState<string>("");
+  const [maxMainFileBytes, setMaxMainFileBytes] = useState<number>(DEFAULT_MAX_MAIN_FILE_BYTES);
   const { t, locale } = useI18n();
 
   useSeo({
@@ -72,10 +73,20 @@ export function NewFilePage() {
   );
 
   useEffect(() => {
+    apiGet<{ maxFileSizeBytes: number }>("/files/upload-config", true)
+      .then((res) => {
+        if (Number.isFinite(res.maxFileSizeBytes) && res.maxFileSizeBytes > 0) {
+          setMaxMainFileBytes(res.maxFileSizeBytes);
+        }
+      })
+      .catch(() => {});
+
     return () => {
       if (coverPreviewUrl) URL.revokeObjectURL(coverPreviewUrl);
     };
   }, [coverPreviewUrl]);
+
+  const maxMainFileMb = Math.floor(maxMainFileBytes / 1024 / 1024);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -109,7 +120,7 @@ export function NewFilePage() {
     const mainExt = hasMainFile ? getExtension(mainFile.name) : "";
     const coverExt = getExtension(coverImage.name);
     if (hasMainFile && !ALLOWED_MAIN_EXTENSIONS.includes(mainExt)) return setError(t.validationMainFileType);
-    if (hasMainFile && mainFile.size > MAX_MAIN_FILE_BYTES) return setError(t.validationMainFileSize);
+    if (hasMainFile && mainFile.size > maxMainFileBytes) return setError(`${t.validationMainFileSize} (${maxMainFileMb} MB)`);
     if (!ALLOWED_COVER_EXTENSIONS.includes(coverExt)) return setError(t.validationCoverType);
     if (coverImage.size > MAX_COVER_BYTES) return setError(t.validationCoverSize);
     if (extraMetadata) {
@@ -243,7 +254,7 @@ export function NewFilePage() {
               <span className="file-upload-copy">
                 <strong>{mainFileName ? t.filePickerReplace : t.filePickerClickHint}</strong>
                 <span>{mainFileName || t.filePickerNoFile}</span>
-                <em>{t.filePickerMainDropHint}</em>
+                <em>{t.filePickerMainDropHint} ({maxMainFileMb} MB)</em>
               </span>
             </label>
             <input
@@ -258,7 +269,7 @@ export function NewFilePage() {
             />
             <small>
               {publicationMode === "preserve"
-                ? mainFileName || t.publishModePreserveHint
+                ? mainFileName || `${t.publishModePreserveHint} (${maxMainFileMb} MB)`
                 : t.publishModeRequestHint}
             </small>
 

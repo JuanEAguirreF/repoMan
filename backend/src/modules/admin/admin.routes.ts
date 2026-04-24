@@ -1,8 +1,34 @@
 import { FastifyPluginAsync } from "fastify";
+import { z } from "zod";
 import { requireAuth, requireRole } from "../auth/auth.middleware.js";
 import { approveDeletionRequest, getPendingDeletionRequests, rejectDeletionRequest } from "../deletion/deletion.service.js";
+import { getConfiguredMaxFileSizeBytes, setConfiguredMaxFileSizeBytes } from "./system-settings.repository.js";
 
 export const adminRoutes: FastifyPluginAsync = async (fastify) => {
+  fastify.get("/settings/upload-limits", { preHandler: [requireAuth, requireRole("super_admin")] }, async (_request, reply) => {
+    const maxFileSizeBytes = await getConfiguredMaxFileSizeBytes(fastify);
+    return reply.send({
+      maxFileSizeBytes,
+      maxFileSizeMb: Math.floor(maxFileSizeBytes / 1024 / 1024)
+    });
+  });
+
+  fastify.post("/settings/upload-limits", { preHandler: [requireAuth, requireRole("super_admin")] }, async (request, reply) => {
+    const schema = z.object({
+      maxFileSizeMb: z.number().int().min(5).max(1024)
+    });
+    const parsed = schema.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      return reply.code(400).send({ error: "Invalid maxFileSizeMb. Expected integer between 5 and 1024." });
+    }
+    const bytes = parsed.data.maxFileSizeMb * 1024 * 1024;
+    const savedBytes = await setConfiguredMaxFileSizeBytes(fastify, bytes);
+    return reply.send({
+      maxFileSizeBytes: savedBytes,
+      maxFileSizeMb: Math.floor(savedBytes / 1024 / 1024)
+    });
+  });
+
   fastify.get(
     "/deletion-requests",
     { preHandler: [requireAuth, requireRole("super_admin")] },

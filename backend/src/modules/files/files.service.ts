@@ -68,7 +68,9 @@ export async function createFileUpload(fastify: FastifyInstance, params: {
   metadata: Record<string, string>;
   mainFile?: UploadedFileInput;
   coverFile: UploadedFileInput;
+  maxMainFileBytes?: number;
 }) {
+  const mainFileLimitBytes = params.maxMainFileBytes ?? env.MAX_FILE_SIZE_BYTES;
   const normalizedCoverMime = normalizeMimeType(params.coverFile.mimetype);
   const normalizedMainMime = params.mainFile ? normalizeMimeType(params.mainFile.mimetype) : "";
 
@@ -112,7 +114,7 @@ export async function createFileUpload(fastify: FastifyInstance, params: {
         filename: params.mainFile.filename,
         mimetype: normalizedMainMime,
         buffer: params.mainFile.buffer,
-        maxBytes: env.MAX_FILE_SIZE_BYTES
+        maxBytes: mainFileLimitBytes
       })
     : {
         originalFilename: "__no_backup__",

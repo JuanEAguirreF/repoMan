@@ -51,32 +51,37 @@ export function AdminDeletionRequestsPage() {
   }
 
   return (
-    <section>
+    <section className="admin-page">
       <h1>{t.adminPendingTitle}</h1>
-      {error && <p style={{ color: "crimson" }}>{error}</p>}
-      <table width="100%" cellPadding={8}>
-        <thead>
-          <tr>
-            <th align="left">{t.colRequest}</th>
-            <th align="left">{t.colFile}</th>
-            <th align="left">{t.colReason}</th>
-            <th align="left">{t.colActions}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((item) => (
-            <tr key={item.id}>
-              <td>{item.id.slice(0, 8)}</td>
-              <td>{item.file_id.slice(0, 8)}</td>
-              <td>{item.reason ?? "-"}</td>
-              <td style={{ display: "flex", gap: 8 }}>
-                <button onClick={() => approve(item.id)}>{t.approve}</button>
-                <button onClick={() => reject(item.id)}>{t.reject}</button>
-              </td>
+      <p className="admin-lead">{t.adminPendingLead}</p>
+      {error && <p className="admin-message-error">{error}</p>}
+      <div className="admin-table-wrap">
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th>{t.colRequest}</th>
+              <th>{t.colFile}</th>
+              <th>{t.colReason}</th>
+              <th>{t.colActions}</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {items.map((item) => (
+              <tr key={item.id}>
+                <td>{item.id.slice(0, 8)}</td>
+                <td>{item.file_id.slice(0, 8)}</td>
+                <td>{item.reason ?? "-"}</td>
+                <td>
+                  <div className="admin-actions-inline">
+                    <button className="chip-btn" onClick={() => approve(item.id)}>{t.approve}</button>
+                    <button className="chip-btn" onClick={() => reject(item.id)}>{t.reject}</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }

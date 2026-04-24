@@ -1064,6 +1064,128 @@ a {
   color: var(--muted);
 }
 
+.admin-page {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-lead {
+  margin: 0;
+  color: var(--muted);
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 12px;
+}
+
+.admin-panel {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+  padding: 14px;
+}
+
+.admin-panel h2 {
+  margin: 0 0 8px;
+  font-family: "Cardo", serif;
+}
+
+.admin-panel p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.admin-form-row {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: 1fr 120px auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.admin-form-row label {
+  grid-column: 1 / -1;
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.admin-form-row input {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+  background: #101722;
+  color: var(--ink);
+}
+
+.admin-kpi-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border: 1px solid rgba(200, 161, 106, 0.24);
+  border-radius: 10px;
+  padding: 8px 10px;
+  margin-top: 8px;
+  background: rgba(17, 24, 34, 0.52);
+}
+
+.admin-kpi-row span {
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.admin-kpi-row strong {
+  font-size: 0.94rem;
+}
+
+.admin-message-ok {
+  margin-top: 10px !important;
+  color: #6dd093 !important;
+  font-size: 0.84rem;
+}
+
+.admin-message-error {
+  margin-top: 10px !important;
+  color: #f08e9a !important;
+  font-size: 0.84rem;
+}
+
+.admin-table-wrap {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+  overflow: auto;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 720px;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(200, 161, 106, 0.18);
+  text-align: left;
+  font-size: 0.88rem;
+}
+
+.admin-table th {
+  font-family: "Cardo", serif;
+  letter-spacing: 0.01em;
+  color: #ecd9be;
+  background: rgba(31, 42, 56, 0.66);
+}
+
+.admin-actions-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .upload-page {
   max-width: 980px;
 }
@@ -1618,6 +1740,14 @@ a {
   }
 
   .faq-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-form-row {
     grid-template-columns: 1fr;
   }
 }

@@ -65,6 +65,12 @@ create table if not exists audit_logs (
   created_at timestamptz not null default now()
 );
 
+create table if not exists system_settings (
+  key text primary key,
+  value_text text not null,
+  updated_at timestamptz not null default now()
+);
+
 -- Useful indexes
 create index if not exists idx_users_profiles_auth_user_id on users_profiles(auth_user_id);
 create index if not exists idx_files_owner_user_id on files(owner_user_id);
