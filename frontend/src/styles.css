@@ -1601,6 +1601,32 @@ a {
   color: var(--ink);
 }
 
+.archive-validation-modal {
+  width: min(480px, 100%);
+}
+
+.archive-validation-time {
+  margin: 10px 0 0;
+  font-size: 0.84rem;
+  color: var(--muted);
+}
+
+.archive-validation-report {
+  margin-top: 10px;
+  border: 1px dashed rgba(127, 139, 207, 0.5);
+  border-radius: 10px;
+  background: rgba(127, 139, 207, 0.12);
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.archive-validation-report p {
+  margin: 0;
+  color: #d9e0ff;
+  font-size: 0.82rem;
+}
+
 .upload-progress-wrap {
   border: 1px solid var(--line);
   border-radius: 12px;
