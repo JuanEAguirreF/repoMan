@@ -3,6 +3,8 @@ import { useI18n } from "../lib/i18n";
 
 export function FaqPage() {
   const { t, locale } = useI18n();
+  const siteUrl = ((import.meta.env.VITE_SITE_URL as string | undefined)?.trim().replace(/\/$/, "") ||
+    "https://repoman.comunidaddelmanga.com");
 
   useSeo({
     title: t.faqTitle,
@@ -12,18 +14,38 @@ export function FaqPage() {
     index: true,
     follow: true,
     type: "website",
-    jsonLd: {
-      "@context": "https://schema.org",
-      "@type": "FAQPage",
-      mainEntity: [
-        { "@type": "Question", name: t.faqQ1, acceptedAnswer: { "@type": "Answer", text: t.faqA1 } },
-        { "@type": "Question", name: t.faqQ2, acceptedAnswer: { "@type": "Answer", text: t.faqA2 } },
-        { "@type": "Question", name: t.faqQ3, acceptedAnswer: { "@type": "Answer", text: t.faqA3 } },
-        { "@type": "Question", name: t.faqQ4, acceptedAnswer: { "@type": "Answer", text: t.faqA4 } },
-        { "@type": "Question", name: t.faqQ5, acceptedAnswer: { "@type": "Answer", text: t.faqA5 } },
-        { "@type": "Question", name: t.faqQ6, acceptedAnswer: { "@type": "Answer", text: t.faqA6 } }
-      ]
-    }
+    jsonLd: [
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: [
+          { "@type": "Question", name: t.faqQ1, acceptedAnswer: { "@type": "Answer", text: t.faqA1 } },
+          { "@type": "Question", name: t.faqQ2, acceptedAnswer: { "@type": "Answer", text: t.faqA2 } },
+          { "@type": "Question", name: t.faqQ3, acceptedAnswer: { "@type": "Answer", text: t.faqA3 } },
+          { "@type": "Question", name: t.faqQ4, acceptedAnswer: { "@type": "Answer", text: t.faqA4 } },
+          { "@type": "Question", name: t.faqQ5, acceptedAnswer: { "@type": "Answer", text: t.faqA5 } },
+          { "@type": "Question", name: t.faqQ6, acceptedAnswer: { "@type": "Answer", text: t.faqA6 } }
+        ]
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: t.navPublicCatalog,
+            item: `${siteUrl}/`
+          },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: t.navFaq,
+            item: `${siteUrl}/faq`
+          }
+        ]
+      }
+    ]
   });
 
   const faqs = [

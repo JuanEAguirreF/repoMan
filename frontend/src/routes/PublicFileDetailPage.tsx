@@ -29,6 +29,8 @@ export function PublicFileDetailPage() {
   const { t, locale } = useI18n();
   const discordInviteUrl =
     ((import.meta.env.VITE_DISCORD_INVITE_URL as string | undefined)?.trim() || "https://discord.gg/jURmbDXjnf");
+  const siteUrl = ((import.meta.env.VITE_SITE_URL as string | undefined)?.trim().replace(/\/$/, "") ||
+    "https://repoman.comunidaddelmanga.com");
 
   const fileSlug = slug ? extractSlugParam(slug) : null;
 
@@ -64,18 +66,38 @@ export function PublicFileDetailPage() {
     type: "article",
     image: coverImageUrl,
     jsonLd: item
-      ? {
-          "@context": "https://schema.org",
-          "@type": "ComicStory",
-          name: item.title,
-          description: safeDescription,
-          genre: item.category,
-          keywords: item.tags?.join(", "),
-          inLanguage: "es",
-          image: coverImageUrl,
-          datePublished: item.published_at,
-          dateCreated: item.created_at
-        }
+      ? [
+          {
+            "@context": "https://schema.org",
+            "@type": "ComicStory",
+            name: item.title,
+            description: safeDescription,
+            genre: item.category,
+            keywords: item.tags?.join(", "),
+            inLanguage: locale,
+            image: coverImageUrl,
+            datePublished: item.published_at,
+            dateCreated: item.created_at
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              {
+                "@type": "ListItem",
+                position: 1,
+                name: t.navPublicCatalog,
+                item: `${siteUrl}/`
+              },
+              {
+                "@type": "ListItem",
+                position: 2,
+                name: item.title,
+                item: `${siteUrl}${buildPublicFilePath(item.slug)}`
+              }
+            ]
+          }
+        ]
       : undefined
   });
 

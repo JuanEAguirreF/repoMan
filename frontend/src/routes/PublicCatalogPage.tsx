@@ -97,19 +97,33 @@ export function PublicCatalogPage() {
     index: true,
     follow: true,
     type: "website",
-    jsonLd: {
-      "@context": "https://schema.org",
-      "@type": "CollectionPage",
-      name: t.catalogTitle,
-      description: t.catalogLead,
-      inLanguage: "es",
-      url: `${siteUrl}/`,
-      isPartOf: {
-        "@type": "WebSite",
-        name: "RepoMan",
-        url: siteUrl
+    jsonLd: [
+      {
+        "@context": "https://schema.org",
+        "@type": "CollectionPage",
+        name: t.catalogTitle,
+        description: t.catalogLead,
+        inLanguage: locale,
+        url: `${siteUrl}/`,
+        isPartOf: {
+          "@type": "WebSite",
+          name: "RepoMan",
+          url: siteUrl
+        }
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: t.navPublicCatalog,
+            item: `${siteUrl}/`
+          }
+        ]
       }
-    }
+    ]
   });
 
   if (loading) return <p>{t.catalogLoading}</p>;
@@ -121,7 +135,7 @@ export function PublicCatalogPage() {
         badge={t.catalogMetaOnly}
         title={t.catalogTitle}
         description={t.catalogLead}
-        ctaSecondaryLabel="¿Qué es RepoMan?"
+        ctaSecondaryLabel={t.navAbout}
         ctaSecondaryHref="/que-es-repoman"
         ctaLabel={t.heroCta}
         ctaHref="#catalog-content"

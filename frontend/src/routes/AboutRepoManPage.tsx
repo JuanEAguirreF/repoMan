@@ -1,5 +1,6 @@
 import { useSeo } from "../lib/seo";
 import { useI18n } from "../lib/i18n";
+import { Link } from "react-router-dom";
 
 export function AboutRepoManPage() {
   const { t, locale } = useI18n();
@@ -10,73 +11,128 @@ export function AboutRepoManPage() {
     "https://repoman.comunidaddelmanga.com");
 
   useSeo({
-    title: "¿Qué es RepoMan?",
-    description:
-      "Conoce cómo funciona RepoMan para preservar mangas y cómo solicitar tu usuario y contraseña por Discord.",
+    title: t.aboutSeoTitle,
+    description: t.aboutSeoDescription,
     path: "/que-es-repoman",
     lang: locale,
     index: true,
     follow: true,
     type: "website",
-    jsonLd: {
-      "@context": "https://schema.org",
-      "@type": "AboutPage",
-      name: "¿Qué es RepoMan?",
-      inLanguage: locale,
-      url: `${siteUrl}/que-es-repoman`,
-      isPartOf: {
-        "@type": "WebSite",
-        name: "RepoMan",
-        url: siteUrl
+    jsonLd: [
+      {
+        "@context": "https://schema.org",
+        "@type": "AboutPage",
+        name: t.aboutSeoTitle,
+        inLanguage: locale,
+        url: `${siteUrl}/que-es-repoman`,
+        isPartOf: {
+          "@type": "WebSite",
+          name: "RepoMan",
+          url: siteUrl
+        },
+        about: {
+          "@type": "Thing",
+          name: locale === "es" ? "Preservación de manga, manhwa y manhua" : "Manga, manhwa, and manhua preservation"
+        }
       },
-      about: {
-        "@type": "Thing",
-        name: "Preservación de manga, manhwa y manhua"
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: t.navPublicCatalog,
+            item: `${siteUrl}/`
+          },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: t.navAbout,
+            item: `${siteUrl}/que-es-repoman`
+          }
+        ]
       }
-    }
+    ]
   });
 
   return (
     <section className="about-page">
       <article className="about-hero">
         <span className="about-kicker">REPO ARCHIVE</span>
-        <h1>📚 ¿Qué es RepoMan?</h1>
-        <p>
-          RepoMan es una plataforma de preservación: organizamos metadatos, portadas y respaldo de archivos para que
-          obras de manga, manhwa y manhua no se pierdan con el tiempo. El catálogo público muestra información y estado
-          de conservación de cada obra.
-        </p>
+        <h1>{t.aboutHeroTitle}</h1>
+        <p>{t.aboutHeroLead}</p>
+        <div className="about-hero-actions">
+          <a className="about-discord-cta strong" href={discordInviteUrl} target="_blank" rel="noopener noreferrer">
+            {t.aboutHeroPrimaryCta}
+          </a>
+          <Link className="about-discord-cta ghost" to="/faq">
+            {t.aboutHeroSecondaryCta}
+          </Link>
+        </div>
+        <div className="about-hero-stats" role="list">
+          <div className="about-hero-stat" role="listitem">
+            <span>{t.aboutHeroStat1Label}</span>
+            <strong>{t.aboutHeroStat1Value}</strong>
+          </div>
+          <div className="about-hero-stat" role="listitem">
+            <span>{t.aboutHeroStat2Label}</span>
+            <strong>{t.aboutHeroStat2Value}</strong>
+          </div>
+          <div className="about-hero-stat" role="listitem">
+            <span>{t.aboutHeroStat3Label}</span>
+            <strong>{t.aboutHeroStat3Value}</strong>
+          </div>
+        </div>
       </article>
+
+      <section className="about-highlights" aria-label={t.aboutHighlightsTitle}>
+        <h2>{t.aboutHighlightsTitle}</h2>
+        <div className="about-highlights-grid">
+          <article className="about-highlight-card">
+            <h3>{t.aboutHighlight1Title}</h3>
+            <p>{t.aboutHighlight1Body}</p>
+          </article>
+          <article className="about-highlight-card">
+            <h3>{t.aboutHighlight2Title}</h3>
+            <p>{t.aboutHighlight2Body}</p>
+          </article>
+          <article className="about-highlight-card">
+            <h3>{t.aboutHighlight3Title}</h3>
+            <p>{t.aboutHighlight3Body}</p>
+          </article>
+        </div>
+      </section>
 
       <div className="about-grid">
         <article className="about-card">
-          <h2>🧭 ¿Qué hacemos?</h2>
+          <h2>{t.aboutWhatWeDoTitle}</h2>
           <div className="about-pill-row">
-            <span className="about-pill">Catalogación de obras</span>
-            <span className="about-pill">Preservación de respaldo</span>
-            <span className="about-pill">Seguimiento de obras faltantes</span>
-            <span className="about-pill">Moderación por administradores</span>
+            <span className="about-pill">{t.aboutPillCataloging}</span>
+            <span className="about-pill">{t.aboutPillPreservation}</span>
+            <span className="about-pill">{t.aboutPillTracking}</span>
+            <span className="about-pill">{t.aboutPillModeration}</span>
           </div>
         </article>
 
         <article className="about-card">
-          <h2>🤝 ¿Cómo participar?</h2>
+          <h2>{t.aboutHowToJoinTitle}</h2>
           <ol className="about-steps">
             <li>
-              <strong>Solicita acceso por Discord.</strong> El equipo crea tu cuenta.
+              <strong>{t.aboutStep1Title}</strong> {t.aboutStep1Body}
             </li>
             <li>
-              <strong>Recibe usuario y contraseña.</strong> Con eso puedes iniciar sesión.
+              <strong>{t.aboutStep2Title}</strong> {t.aboutStep2Body}
             </li>
             <li>
-              <strong>Publica obras.</strong> Puedes subir con respaldo o crear solicitud de conservación.
+              <strong>{t.aboutStep3Title}</strong> {t.aboutStep3Body}
             </li>
           </ol>
         </article>
       </div>
 
       <article className="about-card">
-        <h2>🔐 ¿Cómo solicito acceso como colaborador?</h2>
+        <h2>{t.aboutAccessTitle}</h2>
         <div className="about-discord">
           {discordImageUrl ? (
             <img src={discordImageUrl} alt="Discord Comunidad del Manga" />
@@ -84,15 +140,21 @@ export function AboutRepoManPage() {
             <div className="about-pill">Discord</div>
           )}
           <div>
-            <p>
-              Si deseas participar como uploader, debes solicitar tu cuenta por Discord. Allí te entregaremos tu
-              usuario y contraseña para acceder al panel y colaborar con la conservación.
-            </p>
+            <p>{t.aboutAccessLead}</p>
             <a className="about-discord-cta" href={discordInviteUrl} target="_blank" rel="noopener noreferrer">
               {t.discordCta}
             </a>
           </div>
         </div>
+      </article>
+
+      <article className="about-principles">
+        <h2>{t.aboutPrinciplesTitle}</h2>
+        <ul>
+          <li>{t.aboutPrinciple1}</li>
+          <li>{t.aboutPrinciple2}</li>
+          <li>{t.aboutPrinciple3}</li>
+        </ul>
       </article>
 
       <article className="about-final-cta">

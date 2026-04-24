@@ -823,10 +823,81 @@ a {
   max-width: 76ch;
 }
 
+.about-hero-actions {
+  margin-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.about-hero-stats {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.about-hero-stat {
+  border: 1px solid rgba(200, 161, 106, 0.24);
+  border-radius: 11px;
+  background: rgba(17, 24, 34, 0.58);
+  padding: 9px 10px;
+  display: grid;
+  gap: 3px;
+}
+
+.about-hero-stat span {
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.about-hero-stat strong {
+  color: #eadfcf;
+  font-size: 0.88rem;
+  line-height: 1.2;
+}
+
 .about-grid {
   display: grid;
   grid-template-columns: 1.2fr 1fr;
   gap: 14px;
+}
+
+.about-highlights {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+  padding: 14px;
+}
+
+.about-highlights h2 {
+  margin: 0 0 10px;
+  font-family: "Cardo", serif;
+}
+
+.about-highlights-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.about-highlight-card {
+  border: 1px solid rgba(200, 161, 106, 0.24);
+  border-radius: 11px;
+  background: linear-gradient(180deg, #1d2733 0%, #161f2b 100%);
+  padding: 11px;
+}
+
+.about-highlight-card h3 {
+  margin: 0;
+  font-size: 0.98rem;
+  font-family: "Cardo", serif;
+}
+
+.about-highlight-card p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
 }
 
 .about-card {
@@ -904,11 +975,40 @@ a {
   font-weight: 700;
 }
 
+.about-discord-cta.ghost {
+  background: #253141;
+  color: var(--ink);
+  border-color: var(--line);
+}
+
 .about-discord-cta.strong {
   background: linear-gradient(90deg, #6f7ed3 0%, #8f9ce8 100%);
   border-color: #8f9ce8;
   font-size: 0.9rem;
   padding: 10px 14px;
+}
+
+.about-principles {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel-soft);
+  padding: 14px;
+}
+
+.about-principles h2 {
+  margin: 0 0 8px;
+  font-family: "Cardo", serif;
+}
+
+.about-principles ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+}
+
+.about-principles li {
+  color: var(--muted);
 }
 
 .about-final-cta {
@@ -1526,6 +1626,14 @@ a {
   }
 
   .about-discord {
+    grid-template-columns: 1fr;
+  }
+
+  .about-hero-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .about-highlights-grid {
     grid-template-columns: 1fr;
   }
 
