@@ -98,14 +98,14 @@ const messages = {
     aboutStep3Body: "You can upload with backup or create a preservation request.",
     aboutAccessTitle: "How do I request collaborator access?",
     aboutAccessLead:
-      "If you want to participate as an uploader, request your account on Discord. There you will receive your username and password to access the dashboard.",
+      "To participate as an uploader, request your account on Discord. The team reviews your request and enables your dashboard access.",
     aboutPrinciplesTitle: "Operational principles",
     aboutPrinciple1: "Public visitors can browse metadata and covers, but never access the real file.",
     aboutPrinciple2: "Deletion is controlled by request and admin review to preserve archival integrity.",
     aboutPrinciple3: "Published records are immutable in spirit, with traceability and moderation.",
     aboutFinalTitle: "Want to collaborate with preservation?",
     aboutFinalLead:
-      "Request your uploader access through Discord. The team will share your username and password so you can contribute responsibly.",
+      "Every recovered title helps preserve manga history. If you want to contribute, join our Discord community and participate in the process.",
     aboutFinalCta: "Request Account on Discord",
     faqTitle: "Frequently Asked Questions",
     faqLead: "Quick answers about RepoMan, conservation flow, and how to collaborate.",
@@ -342,14 +342,14 @@ const messages = {
     aboutStep3Body: "Puedes subir con respaldo o crear solicitud de conservación.",
     aboutAccessTitle: "¿Cómo solicito acceso como colaborador?",
     aboutAccessLead:
-      "Si deseas participar como uploader, debes solicitar tu cuenta por Discord. Allí te entregaremos tu usuario y contraseña para acceder al panel y colaborar con la conservación.",
+      "Si deseas participar como uploader, solicita tu cuenta por Discord. El equipo revisa tu solicitud y habilita tu acceso al panel.",
     aboutPrinciplesTitle: "Principios de operación",
     aboutPrinciple1: "Los visitantes públicos pueden ver metadatos y portadas, pero nunca acceder al archivo real.",
     aboutPrinciple2: "La eliminación se controla por solicitud y revisión admin para proteger la integridad del archivo.",
     aboutPrinciple3: "Los registros publicados son inmutables en esencia, con trazabilidad y moderación.",
     aboutFinalTitle: "¿Quieres colaborar con la conservación?",
     aboutFinalLead:
-      "Solicita tu acceso de uploader por Discord. El equipo te compartirá tu usuario y contraseña para que puedas aportar de forma responsable.",
+      "Cada obra recuperada ayuda a preservar la historia del manga. Si quieres aportar, únete a nuestra comunidad en Discord y participa del proceso.",
     aboutFinalCta: "Solicitar Cuenta en Discord",
     faqTitle: "Preguntas Frecuentes",
     faqLead: "Respuestas rápidas sobre RepoMan, conservación y colaboración.",

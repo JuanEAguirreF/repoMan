@@ -60,7 +60,7 @@ export function AboutRepoManPage() {
     <section className="about-page">
       <article className="about-hero">
         <span className="about-kicker">REPO ARCHIVE</span>
-        <h1>{t.aboutHeroTitle}</h1>
+        <h1>{locale === "es" ? "📚 ¿Qué es RepoMan?" : "📚 What is RepoMan?"}</h1>
         <p>{t.aboutHeroLead}</p>
         <div className="about-hero-actions">
           <a className="about-discord-cta strong" href={discordInviteUrl} target="_blank" rel="noopener noreferrer">
@@ -86,27 +86,14 @@ export function AboutRepoManPage() {
         </div>
       </article>
 
-      <section className="about-highlights" aria-label={t.aboutHighlightsTitle}>
-        <h2>{t.aboutHighlightsTitle}</h2>
-        <div className="about-highlights-grid">
-          <article className="about-highlight-card">
-            <h3>{t.aboutHighlight1Title}</h3>
-            <p>{t.aboutHighlight1Body}</p>
-          </article>
-          <article className="about-highlight-card">
-            <h3>{t.aboutHighlight2Title}</h3>
-            <p>{t.aboutHighlight2Body}</p>
-          </article>
-          <article className="about-highlight-card">
-            <h3>{t.aboutHighlight3Title}</h3>
-            <p>{t.aboutHighlight3Body}</p>
-          </article>
-        </div>
-      </section>
-
       <div className="about-grid">
         <article className="about-card">
-          <h2>{t.aboutWhatWeDoTitle}</h2>
+          <h2 className="about-heading">
+            <span aria-hidden="true" className="about-heading-icon">
+              🧩
+            </span>
+            {locale === "es" ? "¿Qué hacemos?" : "What do we do?"}
+          </h2>
           <div className="about-pill-row">
             <span className="about-pill">{t.aboutPillCataloging}</span>
             <span className="about-pill">{t.aboutPillPreservation}</span>
@@ -116,7 +103,12 @@ export function AboutRepoManPage() {
         </article>
 
         <article className="about-card">
-          <h2>{t.aboutHowToJoinTitle}</h2>
+          <h2 className="about-heading">
+            <span aria-hidden="true" className="about-heading-icon">
+              🤝
+            </span>
+            {locale === "es" ? "¿Cómo participar?" : "How can I join?"}
+          </h2>
           <ol className="about-steps">
             <li>
               <strong>{t.aboutStep1Title}</strong> {t.aboutStep1Body}
@@ -128,29 +120,21 @@ export function AboutRepoManPage() {
               <strong>{t.aboutStep3Title}</strong> {t.aboutStep3Body}
             </li>
           </ol>
+          <p className="about-join-note">{t.aboutAccessLead}</p>
+          <a className="about-discord-cta" href={discordInviteUrl} target="_blank" rel="noopener noreferrer">
+            {t.discordCta}
+          </a>
         </article>
       </div>
 
-      <article className="about-card">
-        <h2>{t.aboutAccessTitle}</h2>
-        <div className="about-discord">
-          {discordImageUrl ? (
-            <img src={discordImageUrl} alt="Discord Comunidad del Manga" />
-          ) : (
-            <div className="about-pill">Discord</div>
-          )}
-          <div>
-            <p>{t.aboutAccessLead}</p>
-            <a className="about-discord-cta" href={discordInviteUrl} target="_blank" rel="noopener noreferrer">
-              {t.discordCta}
-            </a>
-          </div>
-        </div>
-      </article>
-
       <article className="about-principles">
-        <h2>{t.aboutPrinciplesTitle}</h2>
-        <ul>
+        <h2 className="about-heading">
+          <span aria-hidden="true" className="about-heading-icon">
+            🛡️
+          </span>
+          {locale === "es" ? "¿Qué reglas seguimos?" : "Which principles guide us?"}
+        </h2>
+        <ul className="about-principles-list">
           <li>{t.aboutPrinciple1}</li>
           <li>{t.aboutPrinciple2}</li>
           <li>{t.aboutPrinciple3}</li>
@@ -158,11 +142,21 @@ export function AboutRepoManPage() {
       </article>
 
       <article className="about-final-cta">
-        <h2>{t.aboutFinalTitle}</h2>
+        <h2 className="about-heading">
+          <span aria-hidden="true" className="about-heading-icon">
+            🚀
+          </span>
+          {locale === "es" ? "¿Te sumas al proyecto?" : "Ready to collaborate?"}
+        </h2>
         <p>{t.aboutFinalLead}</p>
-        <a className="about-discord-cta strong" href={discordInviteUrl} target="_blank" rel="noopener noreferrer">
-          {t.aboutFinalCta}
-        </a>
+        <div className="about-final-row">
+          {discordImageUrl ? (
+            <img src={discordImageUrl} alt="Discord Comunidad del Manga" className="about-final-discord-image" />
+          ) : null}
+          <a className="about-discord-cta strong" href={discordInviteUrl} target="_blank" rel="noopener noreferrer">
+            {t.aboutFinalCta}
+          </a>
+        </div>
       </article>
     </section>
   );
