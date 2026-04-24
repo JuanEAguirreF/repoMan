@@ -169,6 +169,68 @@ a {
   font-family: inherit;
 }
 
+.shell-header .nav-links .chip-link::before,
+.shell-header .nav-links .chip-btn::before {
+  content: "⌘ ";
+  color: #d8b482;
+}
+
+.nav-account {
+  position: relative;
+}
+
+.nav-account-trigger.is-open {
+  border-color: var(--accent);
+  color: var(--accent-2);
+}
+
+.nav-account-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(320px, 82vw);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #1a2330;
+  box-shadow: var(--shadow);
+  padding: 8px;
+  display: grid;
+  gap: 6px;
+  z-index: 30;
+}
+
+.nav-account-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  border: 1px solid rgba(232, 220, 200, 0.16);
+  border-radius: 10px;
+  padding: 8px 10px;
+  color: #eadfcf;
+  background: #202b39;
+  text-decoration: none;
+  font-size: 0.84rem;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.nav-account-item::before {
+  content: "⌘";
+  color: #d8b482;
+}
+
+.nav-account-item:hover {
+  border-color: var(--accent);
+  color: var(--accent-2);
+}
+
+.nav-account-logout {
+  border-color: rgba(240, 142, 154, 0.5);
+  color: #ffd9de;
+}
+
 .mini-pill {
   display: inline-flex;
   align-items: center;
@@ -886,17 +948,23 @@ a {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  line-height: 1.15;
 }
 
 .about-heading-icon {
-  width: 1.25em;
-  height: 1.25em;
-  display: inline-grid;
+  width: 1.4em;
+  height: 1.4em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   place-items: center;
   border-radius: 999px;
   border: 1px solid rgba(200, 161, 106, 0.4);
   background: rgba(200, 161, 106, 0.1);
-  font-size: 0.95em;
+  font-size: 0.82em;
+  line-height: 1;
+  flex: 0 0 auto;
+  vertical-align: middle;
 }
 
 .about-steps {
@@ -1863,6 +1931,16 @@ a {
     padding-bottom: 2px;
     -webkit-overflow-scrolling: touch;
     scroll-snap-type: x proximity;
+  }
+
+  .nav-account {
+    position: static;
+  }
+
+  .nav-account-menu {
+    position: static;
+    width: 100%;
+    margin-top: 6px;
   }
 
   .chip-link,

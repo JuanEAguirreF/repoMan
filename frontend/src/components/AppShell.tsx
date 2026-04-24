@@ -1,12 +1,14 @@
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { apiGet } from "../lib/api";
 import { SessionUser } from "../types";
 import { useI18n } from "../lib/i18n";
 
 export function AppShell() {
   const [me, setMe] = useState<SessionUser | null>(null);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const accountMenuRef = useRef<HTMLDivElement | null>(null);
   const navigate = useNavigate();
   const { t } = useI18n();
   const headerImageUrl = (import.meta.env.VITE_HEADER_IMAGE_URL as string | undefined)?.trim();
@@ -38,8 +40,31 @@ export function AppShell() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!accountOpen) return;
+
+    function onPointerDown(event: MouseEvent) {
+      const target = event.target as Node;
+      if (accountMenuRef.current && !accountMenuRef.current.contains(target)) {
+        setAccountOpen(false);
+      }
+    }
+
+    function onEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setAccountOpen(false);
+    }
+
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onEscape);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onEscape);
+    };
+  }, [accountOpen]);
+
   async function logout() {
     setMe(null);
+    setAccountOpen(false);
     await supabase.auth.signOut();
     navigate("/");
   }
@@ -69,34 +94,44 @@ export function AppShell() {
               <Link className="chip-link" to="/dashboard/new">
                 {t.navNewFile}
               </Link>
-              {me.role === "super_admin" && (
-                <Link className="chip-link" to="/dashboard/admin/publications">
-                  {t.navAdminPublications}
-                </Link>
+              {me.role === "super_admin" ? (
+                <div className="nav-account" ref={accountMenuRef}>
+                  <button
+                    className={`chip-btn nav-account-trigger ${accountOpen ? "is-open" : ""}`}
+                    onClick={() => setAccountOpen((prev) => !prev)}
+                    aria-expanded={accountOpen}
+                    aria-haspopup="menu"
+                  >
+                    {t.navMyAccount}
+                  </button>
+                  {accountOpen && (
+                    <div className="nav-account-menu" role="menu">
+                      <Link className="nav-account-item" to="/dashboard/admin/publications" onClick={() => setAccountOpen(false)}>
+                        {t.navAdminPublications}
+                      </Link>
+                      <Link className="nav-account-item" to="/dashboard/admin/deletions" onClick={() => setAccountOpen(false)}>
+                        {t.navAdminRequests}
+                      </Link>
+                      <Link className="nav-account-item" to="/dashboard/admin/edits" onClick={() => setAccountOpen(false)}>
+                        {t.navAdminEdits}
+                      </Link>
+                      <Link className="nav-account-item" to="/dashboard/admin/audit" onClick={() => setAccountOpen(false)}>
+                        {t.navAdminAudit}
+                      </Link>
+                      <Link className="nav-account-item" to="/dashboard/admin/files" onClick={() => setAccountOpen(false)}>
+                        {t.navAllFiles}
+                      </Link>
+                      <button className="nav-account-item nav-account-logout" onClick={logout}>
+                        {t.navLogout}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <button className="chip-btn" onClick={logout}>
+                  {t.navLogout}
+                </button>
               )}
-              {me.role === "super_admin" && (
-                <Link className="chip-link" to="/dashboard/admin/deletions">
-                  {t.navAdminRequests}
-                </Link>
-              )}
-              {me.role === "super_admin" && (
-                <Link className="chip-link" to="/dashboard/admin/edits">
-                  {t.navAdminEdits}
-                </Link>
-              )}
-              {me.role === "super_admin" && (
-                <Link className="chip-link" to="/dashboard/admin/audit">
-                  {t.navAdminAudit}
-                </Link>
-              )}
-              {me.role === "super_admin" && (
-                <Link className="chip-link" to="/dashboard/admin/files">
-                  {t.navAllFiles}
-                </Link>
-              )}
-              <button className="chip-btn" onClick={logout}>
-                {t.navLogout}
-              </button>
             </>
           ) : (
             <>
