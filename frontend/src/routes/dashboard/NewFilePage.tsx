@@ -80,7 +80,9 @@ export function NewFilePage() {
         }
       })
       .catch(() => {});
+  }, []);
 
+  useEffect(() => {
     return () => {
       if (coverPreviewUrl) URL.revokeObjectURL(coverPreviewUrl);
     };
@@ -136,7 +138,7 @@ export function NewFilePage() {
       setProgress(0);
       const response = await apiPostFormWithProgress<{ item?: { id?: string; slug?: string } }>("/files", data, (pct) => setProgress(pct));
       setProgress(100);
-      setStatus(t.uploadSuccess);
+      setStatus(t.uploadQueued);
       setLastUploadedSlug(response?.item?.slug ?? "");
       setShowSuccessModal(true);
       form.reset();

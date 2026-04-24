@@ -6,6 +6,8 @@
     "dev:frontend": "pnpm --filter catalog-frontend dev",
     "dev:be": "pnpm run dev:backend",
     "dev:fe": "pnpm run dev:frontend",
+    "typecheck": "pnpm --filter catalog-backend typecheck && pnpm --filter catalog-frontend typecheck",
+    "test": "pnpm --filter catalog-backend test",
     "build": "pnpm -r build",
     "migrate": "pnpm --filter catalog-backend migrate"
   }

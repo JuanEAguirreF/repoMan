@@ -70,8 +70,23 @@ export function AppShell() {
                 {t.navNewFile}
               </Link>
               {me.role === "super_admin" && (
+                <Link className="chip-link" to="/dashboard/admin/publications">
+                  {t.navAdminPublications}
+                </Link>
+              )}
+              {me.role === "super_admin" && (
                 <Link className="chip-link" to="/dashboard/admin/deletions">
                   {t.navAdminRequests}
+                </Link>
+              )}
+              {me.role === "super_admin" && (
+                <Link className="chip-link" to="/dashboard/admin/edits">
+                  {t.navAdminEdits}
+                </Link>
+              )}
+              {me.role === "super_admin" && (
+                <Link className="chip-link" to="/dashboard/admin/audit">
+                  {t.navAdminAudit}
                 </Link>
               )}
               {me.role === "super_admin" && (

@@ -21,5 +21,5 @@ export type CatalogFile = {
   cover_image_path: string;
   created_at: string;
   published_at: string;
-  status: "active" | "pending_deletion" | "deleted";
+  status: "active" | "pending_review" | "rejected_review" | "pending_deletion" | "deleted";
 };

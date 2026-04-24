@@ -61,10 +61,9 @@ export async function requireAuth(request: FastifyRequest, reply: FastifyReply):
 
   let profile = existingProfile;
   if (!profile) {
-    const roleFromMeta = parseRole(
-      (userData.user.app_metadata as Record<string, unknown> | undefined)?.role ??
-        (userData.user.user_metadata as Record<string, unknown> | undefined)?.role
-    );
+    // Security hardening:
+    // role provisioning only trusts app_metadata (server-controlled), never user_metadata.
+    const roleFromMeta = parseRole((userData.user.app_metadata as Record<string, unknown> | undefined)?.role);
     const displayName = deriveDisplayName({
       email: userData.user.email,
       user_metadata: userData.user.user_metadata as Record<string, unknown> | undefined

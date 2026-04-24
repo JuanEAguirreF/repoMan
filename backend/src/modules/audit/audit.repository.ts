@@ -18,3 +18,14 @@ export async function insertAuditLog(
     metadata: params.metadata ?? {}
   });
 }
+
+export async function listRecentAuditLogs(fastify: FastifyInstance, limit = 100) {
+  const safeLimit = Math.min(500, Math.max(1, Math.floor(limit)));
+  const { data, error } = await fastify.supabaseAdmin
+    .from("audit_logs")
+    .select("id,actor_user_id,action,target_type,target_id,metadata,created_at")
+    .order("created_at", { ascending: false })
+    .limit(safeLimit);
+  if (error) throw error;
+  return data ?? [];
+}

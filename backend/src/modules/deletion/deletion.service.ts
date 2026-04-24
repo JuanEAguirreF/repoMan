@@ -17,6 +17,7 @@ export async function requestFileDeletion(
   if (!file) throw new Error("File not found");
   if (file.owner_user_id !== params.requesterUserId) throw new Error("You can only request deletion for your own files");
   if (file.status === "deleted") throw new Error("File is already deleted");
+  if (file.status !== "active") throw new Error("Deletion can only be requested for active published files");
 
   const existing = await getOpenDeletionRequestForFile(fastify, params.fileId);
   if (existing) throw new Error("A pending deletion request already exists");

@@ -11,6 +11,9 @@ import { MyFilesPage } from "./routes/dashboard/MyFilesPage";
 import { NewFilePage } from "./routes/dashboard/NewFilePage";
 import { AdminDeletionRequestsPage } from "./routes/dashboard/AdminDeletionRequestsPage";
 import { AdminFilesPage } from "./routes/dashboard/AdminFilesPage";
+import { AdminPublicationRequestsPage } from "./routes/dashboard/AdminPublicationRequestsPage";
+import { AdminEditRequestsPage } from "./routes/dashboard/AdminEditRequestsPage";
+import { AdminAuditLogsPage } from "./routes/dashboard/AdminAuditLogsPage";
 
 export function App() {
   return (
@@ -28,7 +31,10 @@ export function App() {
             <Route path="/dashboard/new" element={<NewFilePage />} />
 
             <Route element={<RequireRole allowed={["super_admin"]} />}>
+              <Route path="/dashboard/admin/publications" element={<AdminPublicationRequestsPage />} />
               <Route path="/dashboard/admin/deletions" element={<AdminDeletionRequestsPage />} />
+              <Route path="/dashboard/admin/edits" element={<AdminEditRequestsPage />} />
+              <Route path="/dashboard/admin/audit" element={<AdminAuditLogsPage />} />
               <Route path="/dashboard/admin/files" element={<AdminFilesPage />} />
             </Route>
           </Route>

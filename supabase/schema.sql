@@ -1,7 +1,8 @@
 -- Enums
 create type app_role as enum ('super_admin', 'uploader');
-create type file_status as enum ('active', 'pending_deletion', 'deleted');
+create type file_status as enum ('active', 'pending_review', 'rejected_review', 'pending_deletion', 'deleted');
 create type deletion_request_status as enum ('pending', 'approved', 'rejected');
+create type edit_request_status as enum ('pending', 'approved', 'rejected');
 
 -- User profiles mapped to Supabase auth users
 create table if not exists users_profiles (
@@ -29,8 +30,8 @@ create table if not exists files (
   mime_type text not null,
   file_size_bytes bigint not null check (file_size_bytes > 0),
   has_backup boolean not null default true,
-  status file_status not null default 'active',
-  is_public boolean not null default true,
+  status file_status not null default 'pending_review',
+  is_public boolean not null default false,
   allow_download boolean not null default false,
   storage_backend text not null default 'local_fs',
   external_sync_status text not null default 'not_synced',
@@ -49,6 +50,18 @@ create table if not exists deletion_requests (
   requested_by_user_id uuid not null references users_profiles(id),
   reason text null,
   status deletion_request_status not null default 'pending',
+  reviewed_by_user_id uuid null references users_profiles(id),
+  requested_at timestamptz not null default now(),
+  reviewed_at timestamptz null
+);
+
+create table if not exists file_edit_requests (
+  id uuid primary key default gen_random_uuid(),
+  file_id uuid not null references files(id) on delete cascade,
+  requested_by_user_id uuid not null references users_profiles(id),
+  reason text null,
+  proposed_patch jsonb not null default '{}'::jsonb,
+  status edit_request_status not null default 'pending',
   reviewed_by_user_id uuid null references users_profiles(id),
   requested_at timestamptz not null default now(),
   reviewed_at timestamptz null
@@ -77,12 +90,18 @@ create index if not exists idx_files_owner_user_id on files(owner_user_id);
 create index if not exists idx_files_status_public on files(status, is_public);
 create index if not exists idx_deletion_requests_status on deletion_requests(status);
 create index if not exists idx_deletion_requests_file_id on deletion_requests(file_id);
+create index if not exists idx_file_edit_requests_status on file_edit_requests(status);
+create index if not exists idx_file_edit_requests_file_id on file_edit_requests(file_id);
 create index if not exists idx_audit_logs_actor on audit_logs(actor_user_id);
 create index if not exists idx_audit_logs_target on audit_logs(target_type, target_id);
 
 -- Prevent duplicate pending request per file
 create unique index if not exists idx_unique_pending_deletion_request
   on deletion_requests(file_id)
+  where status = 'pending';
+
+create unique index if not exists idx_unique_pending_edit_request
+  on file_edit_requests(file_id)
   where status = 'pending';
 
 -- Public-safe view (metadata only, no file_path)

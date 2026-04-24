@@ -3,11 +3,15 @@ import path from "node:path";
 import { env } from "../../config/env.js";
 import { insertAuditLog } from "../audit/audit.repository.js";
 import {
+  approveFilePublication,
   createFileRecord,
   getFileById,
   getPublicFileById,
+  listAllPublicFilesForSitemap,
   listFilesByOwner,
+  listPendingPublicationFiles,
   listPublicFiles,
+  rejectFilePublication,
   setFileStatus
 } from "./files.repository.js";
 import {
@@ -20,6 +24,7 @@ import {
 import { saveBufferToStorage } from "../../utils/storage.js";
 import { invalidatePublicCache } from "../public/public.cache.js";
 import { uploadCoverToCloudinary } from "../../services/cloudinary.js";
+import { containsSuspiciousExecutableMarker, validateCoverMagic, validateMainFileMagic } from "./file-signature.js";
 
 export type UploadedFileInput = {
   filename: string;
@@ -94,6 +99,12 @@ export async function createFileUpload(fastify: FastifyInstance, params: {
   if (!allowedCoverExtensions.has(coverExt)) {
     throw new Error("Unsupported cover image extension");
   }
+  if (!validateCoverMagic(params.coverFile.buffer, coverExt)) {
+    throw new Error("Cover image content does not match the selected extension");
+  }
+  if (containsSuspiciousExecutableMarker(params.coverFile.buffer)) {
+    throw new Error("Suspicious cover payload blocked by security policy");
+  }
 
   if (params.mainFile) {
     const fileExt = path.extname(params.mainFile.filename || "").toLowerCase();
@@ -104,6 +115,12 @@ export async function createFileUpload(fastify: FastifyInstance, params: {
     // In that case we trust the strict extension allow-list already enforced above.
     if (!allowedFileMimes.has(normalizedMainMime)) {
       throw new Error(`Unsupported main file type (${normalizedMainMime || "none"})`);
+    }
+    if (!validateMainFileMagic(params.mainFile.buffer, fileExt)) {
+      throw new Error("Main file content does not match the selected extension");
+    }
+    if (containsSuspiciousExecutableMarker(params.mainFile.buffer)) {
+      throw new Error("Suspicious main file payload blocked by security policy");
     }
   }
 
@@ -145,8 +162,8 @@ export async function createFileUpload(fastify: FastifyInstance, params: {
     mime_type: params.mainFile ? normalizedMainMime : "application/x-manga-metadata-only",
     file_size_bytes: savedMain.bytes,
     has_backup: Boolean(params.mainFile),
-    status: "active",
-    is_public: true,
+    status: "pending_review",
+    is_public: false,
     allow_download: false,
     published_at: new Date().toISOString(),
     extra_metadata: {
@@ -158,7 +175,7 @@ export async function createFileUpload(fastify: FastifyInstance, params: {
 
   await insertAuditLog(fastify, {
     actorUserId: params.ownerUserId,
-    action: "file.uploaded",
+    action: "file.uploaded_pending_review",
     targetType: "file",
     targetId: String(created.id),
     metadata: { title: created.title, mimeType: created.mime_type, hasBackup: Boolean(params.mainFile) }
@@ -173,8 +190,15 @@ export async function getMyFiles(fastify: FastifyInstance, ownerUserId: string) 
   return listFilesByOwner(fastify, ownerUserId);
 }
 
-export async function getPublicCatalog(fastify: FastifyInstance) {
-  return listPublicFiles(fastify);
+export async function getPublicCatalog(
+  fastify: FastifyInstance,
+  params?: { page?: number; pageSize?: number; query?: string }
+) {
+  return listPublicFiles(fastify, params);
+}
+
+export async function getPublicCatalogForSitemap(fastify: FastifyInstance) {
+  return listAllPublicFilesForSitemap(fastify);
 }
 
 export async function getPublicCatalogDetail(fastify: FastifyInstance, id: string) {
@@ -193,6 +217,27 @@ export async function markDeleted(fastify: FastifyInstance, fileId: string) {
 
 export async function restoreActive(fastify: FastifyInstance, fileId: string) {
   await setFileStatus(fastify, fileId, "active", null);
+  invalidatePublicCache();
+}
+
+export async function listPendingPublicationQueue(fastify: FastifyInstance) {
+  return listPendingPublicationFiles(fastify);
+}
+
+export async function approvePublication(fastify: FastifyInstance, fileId: string) {
+  await approveFilePublication(fastify, fileId);
+  invalidatePublicCache();
+}
+
+export async function rejectPublication(fastify: FastifyInstance, fileId: string) {
+  await rejectFilePublication(fastify, fileId);
+  invalidatePublicCache();
+}
+
+export async function resubmitForPublicationReview(fastify: FastifyInstance, fileId: string) {
+  await setFileStatus(fastify, fileId, "pending_review", null);
+  const { error } = await fastify.supabaseAdmin.from("files").update({ is_public: false }).eq("id", fileId);
+  if (error) throw error;
   invalidatePublicCache();
 }
 

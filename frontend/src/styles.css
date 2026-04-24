@@ -1171,6 +1171,7 @@ a {
   border-bottom: 1px solid rgba(200, 161, 106, 0.18);
   text-align: left;
   font-size: 0.88rem;
+  vertical-align: top;
 }
 
 .admin-table th {
@@ -1184,6 +1185,15 @@ a {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.admin-table code {
+  display: inline-block;
+  max-width: min(420px, 60vw);
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.76rem;
+  color: #d8c6ab;
 }
 
 .upload-page {

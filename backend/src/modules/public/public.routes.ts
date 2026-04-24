@@ -1,9 +1,10 @@
 import { FastifyPluginAsync } from "fastify";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { z } from "zod";
 import { env } from "../../config/env.js";
 import { safeJoin } from "../../utils/filename.js";
-import { getPublicCatalog, getPublicCatalogDetail } from "../files/files.service.js";
+import { getPublicCatalog, getPublicCatalogDetail, getPublicCatalogForSitemap } from "../files/files.service.js";
 import { getCached, setCached } from "./public.cache.js";
 
 function escapeXml(value: string): string {
@@ -30,7 +31,7 @@ export const publicRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.type("application/xml; charset=utf-8").send(hit);
     }
 
-    const items = (await getPublicCatalog(fastify)) as Array<{
+    const items = (await getPublicCatalogForSitemap(fastify)) as Array<{
       id: string;
       slug?: string;
       published_at?: string;
@@ -107,18 +108,34 @@ export const publicRoutes: FastifyPluginAsync = async (fastify) => {
     return reply.send({ items, cached: false });
   });
 
-  fastify.get("/files", async (_request, reply) => {
-    const cacheKey = "public:list";
-    const hit = getCached<unknown[]>(cacheKey);
-    if (hit) {
-      reply.header("Cache-Control", "public, max-age=60");
-      return reply.send({ items: hit, cached: true });
+  fastify.get("/files", async (request, reply) => {
+    const parsed = z
+      .object({
+        page: z.coerce.number().int().min(1).optional(),
+        pageSize: z.coerce.number().int().min(1).max(60).optional(),
+        q: z.string().max(120).optional()
+      })
+      .safeParse(request.query ?? {});
+    if (!parsed.success) {
+      return reply.code(400).send({ error: "Invalid query parameters" });
     }
 
-    const items = await getPublicCatalog(fastify);
-    setCached(cacheKey, items);
+    const query = parsed.data;
+
+    const page = query.page ?? 1;
+    const pageSize = query.pageSize ?? 24;
+    const q = (query.q ?? "").trim();
+    const cacheKey = `public:list:${page}:${pageSize}:${q.toLowerCase()}`;
+    const hit = getCached<{ items: unknown[]; total: number; page: number; pageSize: number }>(cacheKey);
+    if (hit) {
+      reply.header("Cache-Control", "public, max-age=60");
+      return reply.send({ ...hit, cached: true });
+    }
+
+    const payload = await getPublicCatalog(fastify, { page, pageSize, query: q });
+    setCached(cacheKey, payload);
     reply.header("Cache-Control", "public, max-age=60");
-    return reply.send({ items, cached: false });
+    return reply.send({ ...payload, cached: false });
   });
 
   fastify.get("/files/:id", async (request, reply) => {

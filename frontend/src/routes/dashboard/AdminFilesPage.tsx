@@ -8,7 +8,7 @@ type AdminFile = {
   id: string;
   title: string;
   category: string;
-  status: "active" | "pending_deletion" | "deleted";
+  status: "active" | "pending_review" | "rejected_review" | "pending_deletion" | "deleted";
   owner_user_id: string;
   owner_email?: string | null;
   owner_display_name?: string | null;
@@ -107,7 +107,11 @@ export function AdminFilesPage() {
           </div>
           <div className="admin-kpi-row">
             <span>{t.adminPendingFiles}</span>
-            <strong>{items.filter((x) => x.status === "pending_deletion").length}</strong>
+            <strong>{items.filter((x) => x.status === "pending_deletion" || x.status === "pending_review").length}</strong>
+          </div>
+          <div className="admin-kpi-row">
+            <span>{t.adminRejectedFiles}</span>
+            <strong>{items.filter((x) => x.status === "rejected_review").length}</strong>
           </div>
           <div className="admin-kpi-row">
             <span>{t.adminDeletedFiles}</span>

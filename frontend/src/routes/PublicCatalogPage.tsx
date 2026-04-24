@@ -34,7 +34,13 @@ export function PublicCatalogPage() {
   const [items, setItems] = useState<CatalogFile[]>([]);
   const [topUploaders, setTopUploaders] = useState<{ username: string, count: number }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(24);
+  const [totalItems, setTotalItems] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
   const { t, locale } = useI18n();
   const cafeImageUrl = (import.meta.env.VITE_CAFE_IMAGE_URL as string | undefined)?.trim();
   const discordImageUrl = (import.meta.env.VITE_DISCORD_IMAGE_URL as string | undefined)?.trim();
@@ -45,20 +51,37 @@ export function PublicCatalogPage() {
     "https://repoman.comunidaddelmanga.com");
 
   useEffect(() => {
-    Promise.all([
-      apiGet<{ items: CatalogFile[] }>("/public/files").then((res) => setItems(res.items)),
-      apiGet<{ items: { username: string, count: number }[] }>("/public/top-uploaders").then((res) => setTopUploaders(res.items)).catch(() => { })
-    ]).finally(() => setLoading(false));
+    const timer = window.setTimeout(() => setSearch(searchInput.trim()), 250);
+    return () => window.clearTimeout(timer);
+  }, [searchInput]);
+
+  async function loadCatalog(targetPage: number, append = false) {
+    const params = new URLSearchParams({
+      page: String(targetPage),
+      pageSize: String(pageSize)
+    });
+    if (search) params.set("q", search);
+
+    const res = await apiGet<{ items: CatalogFile[]; total: number; page: number; pageSize: number }>(
+      `/public/files?${params.toString()}`
+    );
+
+    setItems((prev) => (append ? [...prev, ...res.items] : res.items));
+    setTotalItems(res.total);
+    setHasMore(targetPage * res.pageSize < res.total);
+  }
+
+  useEffect(() => {
+    apiGet<{ items: { username: string; count: number }[] }>("/public/top-uploaders")
+      .then((res) => setTopUploaders(res.items))
+      .catch(() => {});
   }, []);
 
-  const filtered = useMemo(
-    () =>
-      items.filter((item) => {
-        const haystack = `${item.title} ${item.category} ${item.description}`.toLowerCase();
-        return haystack.includes(search.toLowerCase());
-      }),
-    [items, search]
-  );
+  useEffect(() => {
+    setLoading(true);
+    setPage(1);
+    loadCatalog(1, false).finally(() => setLoading(false));
+  }, [search]);
 
   const heroItems = useMemo(
     () => {
@@ -88,6 +111,17 @@ export function PublicCatalogPage() {
     },
     [items]
   );
+
+  async function loadMore() {
+    const nextPage = page + 1;
+    setLoadingMore(true);
+    try {
+      await loadCatalog(nextPage, true);
+      setPage(nextPage);
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   useSeo({
     title: t.catalogTitle,
@@ -145,12 +179,12 @@ export function PublicCatalogPage() {
         <div className="catalog-main">
           <div className="catalog-toolbar">
             <span>
-              {filtered.length} {t.catalogResultCount}
+              {totalItems} {t.catalogResultCount}
             </span>
             <small>{t.catalogMetaOnlyDesc}</small>
           </div>
           <div className="catalog-grid">
-            {filtered.map((item) => (
+            {items.map((item) => (
               <article key={item.id} className="catalog-card">
                 <div className="catalog-card-media">
                   <img src={resolveCoverUrl(item.id, item.cover_image_path)} alt={item.title} />
@@ -182,7 +216,14 @@ export function PublicCatalogPage() {
               </article>
             ))}
           </div>
-          {filtered.length === 0 && <p>{t.catalogNoResults}</p>}
+          {items.length === 0 && <p>{t.catalogNoResults}</p>}
+          {hasMore && (
+            <div style={{ marginTop: 12 }}>
+              <button className="chip-btn" onClick={loadMore} disabled={loadingMore}>
+                {loadingMore ? t.loading : t.catalogLoadMore}
+              </button>
+            </div>
+          )}
         </div>
 
         <aside className="sidebar">
@@ -193,18 +234,18 @@ export function PublicCatalogPage() {
             id="catalog-search"
             className="search-input"
             placeholder={t.catalogSearch}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
           />
           <div className="stat-box">
             <strong>{t.quickStats}</strong>
             <div className="stat-item">
               <span>{t.totalItems}</span>
-              <strong>{items.length}</strong>
+              <strong>{totalItems}</strong>
             </div>
             <div className="stat-item">
               <span>{t.visibleItems}</span>
-              <strong>{filtered.length}</strong>
+              <strong>{items.length}</strong>
             </div>
           </div>
 
