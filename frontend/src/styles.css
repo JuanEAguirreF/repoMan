@@ -10,6 +10,11 @@
   --accent-2: #f0cc8f;
   --line: #3a2f26;
   --shadow: 0 18px 36px rgba(0, 0, 0, 0.35);
+  --discord-bg: #3b4d99;
+  --discord-bg-hover: #4a5eb2;
+  --discord-border: #aab7ff;
+  --discord-text: #f7f9ff;
+  --discord-focus: #d2dcff;
 }
 
 @keyframes ctaFlame {
@@ -144,7 +149,7 @@ a {
   gap: 10px;
   flex-wrap: nowrap;
   margin-top: 0;
-  overflow-x: auto;
+  overflow: visible;
 }
 
 .chip-link,
@@ -562,14 +567,23 @@ a {
 
 .discord-link {
   display: inline-flex;
-  border: 1px solid #7f8bcf;
+  border: 1px solid var(--discord-border);
   border-radius: 999px;
   padding: 7px 11px;
   text-decoration: none;
-  background: #7f8bcf;
-  color: #fff;
+  background: var(--discord-bg);
+  color: var(--discord-text);
   font-size: 0.84rem;
-  font-weight: 600;
+  font-weight: 700;
+}
+
+.discord-link:hover {
+  background: var(--discord-bg-hover);
+}
+
+.discord-link:focus-visible {
+  outline: 2px solid var(--discord-focus);
+  outline-offset: 2px;
 }
 
 .sister-card {
@@ -777,14 +791,14 @@ a {
 
 .detail-discord-link {
   display: inline-flex;
-  border: 1px solid #7f8bcf;
+  border: 1px solid var(--discord-border);
   border-radius: 999px;
   padding: 7px 11px;
   text-decoration: none;
-  background: #7f8bcf;
-  color: #fff;
+  background: var(--discord-bg);
+  color: var(--discord-text);
   font-size: 0.82rem;
-  font-weight: 600;
+  font-weight: 700;
   min-height: 36px;
   align-items: center;
 }
@@ -821,6 +835,15 @@ a {
   padding: 6px 10px;
   font-size: 0.78rem;
   min-height: 32px;
+}
+
+.detail-discord-link:hover {
+  background: var(--discord-bg-hover);
+}
+
+.detail-discord-link:focus-visible {
+  outline: 2px solid var(--discord-focus);
+  outline-offset: 2px;
 }
 
 .detail-share-btn:hover {
@@ -1001,14 +1024,23 @@ a {
 .about-discord-cta {
   display: inline-flex;
   margin-top: 10px;
-  border: 1px solid #7f8bcf;
+  border: 1px solid var(--discord-border);
   border-radius: 999px;
   padding: 8px 12px;
   text-decoration: none;
-  background: #7f8bcf;
-  color: #fff;
+  background: var(--discord-bg);
+  color: var(--discord-text);
   font-size: 0.84rem;
   font-weight: 700;
+}
+
+.about-discord-cta:hover {
+  background: var(--discord-bg-hover);
+}
+
+.about-discord-cta:focus-visible {
+  outline: 2px solid var(--discord-focus);
+  outline-offset: 2px;
 }
 
 .about-discord-cta.ghost {
@@ -1018,8 +1050,8 @@ a {
 }
 
 .about-discord-cta.strong {
-  background: linear-gradient(90deg, #6f7ed3 0%, #8f9ce8 100%);
-  border-color: #8f9ce8;
+  background: linear-gradient(90deg, #33458f 0%, #5268c5 100%);
+  border-color: var(--discord-border);
   font-size: 0.9rem;
   padding: 10px 14px;
 }
