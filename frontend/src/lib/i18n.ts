@@ -261,6 +261,9 @@ const messages = {
     archiveValidationReportBtn: "Report error on Discord",
     archiveValidationReportHelp:
       "If the archive is clean and you think this is a false positive or incomplete analysis, contact us on Discord.",
+    archiveValidationClose: "Close",
+    removeMainFile: "Remove file",
+    removeCoverFile: "Remove cover",
     newFileClear: "Clear form",
     adminPendingTitle: "Pending Deletion Requests",
     adminPendingLead: "Review pending deletion requests and keep archival decisions auditable.",
@@ -562,6 +565,9 @@ const messages = {
     archiveValidationReportBtn: "Reportar error en Discord",
     archiveValidationReportHelp:
       "Si el archivo está limpio y crees que hubo un error o no se analizó correctamente, escríbenos por Discord.",
+    archiveValidationClose: "Cerrar",
+    removeMainFile: "Quitar archivo",
+    removeCoverFile: "Quitar portada",
     newFileClear: "Limpiar formulario",
     adminPendingTitle: "Solicitudes de eliminación pendientes",
     adminPendingLead: "Revisa solicitudes pendientes de eliminación y mantén auditables las decisiones de archivo.",

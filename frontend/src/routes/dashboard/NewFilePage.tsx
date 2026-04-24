@@ -39,6 +39,7 @@ type PublicationMode = "preserve" | "request_backup";
 type ContentOrigin = "manga" | "manhwa" | "manhua";
 type ArchiveEntry = { name: string; encrypted: boolean };
 type ArchiveValidationProgress = { pct: number; phase: string };
+type SelectedFileMeta = { name: string; size: number; ext: string; mime: string };
 
 function readU16LE(bytes: Uint8Array, offset: number): number {
   return bytes[offset] | (bytes[offset + 1] << 8);
@@ -161,6 +162,32 @@ function normalizeInnerPath(name: string): string {
   return name.replace(/\\/g, "/").replace(/^\/+/, "").trim();
 }
 
+function makeFileKey(file: File): string {
+  return `${file.name}:${file.size}:${file.lastModified}`;
+}
+
+function formatBytes(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB"];
+  let value = bytes;
+  let idx = 0;
+  while (value >= 1024 && idx < units.length - 1) {
+    value /= 1024;
+    idx += 1;
+  }
+  const precision = value >= 100 || idx === 0 ? 0 : value >= 10 ? 1 : 2;
+  return `${value.toFixed(precision)} ${units[idx]}`;
+}
+
+function getMainFileBadge(ext: string): string {
+  if (ext === ".cbz" || ext === ".cbr") return ext.slice(1).toUpperCase();
+  if (ext === ".zip") return "ZIP";
+  if (ext === ".pdf") return "PDF";
+  if (ext === ".doc" || ext === ".docx") return "DOC";
+  if (ext === ".txt") return "TXT";
+  return "FILE";
+}
+
 function ensureArchiveEntriesAreSafe(entries: ArchiveEntry[]): { ok: true } | { ok: false; message: string } {
   if (entries.length === 0) {
     return { ok: false, message: "archive_no_entries" };
@@ -186,7 +213,9 @@ export function NewFilePage() {
   const navigate = useNavigate();
   const formRef = useRef<HTMLFormElement | null>(null);
   const mainFileInputRef = useRef<HTMLInputElement | null>(null);
+  const coverFileInputRef = useRef<HTMLInputElement | null>(null);
   const lastValidationProgressAtRef = useRef<number>(0);
+  const validationRunIdRef = useRef<number>(0);
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -194,11 +223,15 @@ export function NewFilePage() {
   const [archiveProgress, setArchiveProgress] = useState(0);
   const [archiveElapsedSec, setArchiveElapsedSec] = useState(0);
   const [archivePhase, setArchivePhase] = useState("");
+  const [showArchiveValidationModal, setShowArchiveValidationModal] = useState(false);
   const [archiveReportVisible, setArchiveReportVisible] = useState(false);
   const [archiveValidationError, setArchiveValidationError] = useState("");
+  const [validatedArchiveKey, setValidatedArchiveKey] = useState("");
   const [progress, setProgress] = useState(0);
   const [mainFileName, setMainFileName] = useState("");
+  const [selectedMainFile, setSelectedMainFile] = useState<SelectedFileMeta | null>(null);
   const [coverFileName, setCoverFileName] = useState("");
+  const [selectedCoverFile, setSelectedCoverFile] = useState<SelectedFileMeta | null>(null);
   const [coverPreviewUrl, setCoverPreviewUrl] = useState("");
   const [publicationMode, setPublicationMode] = useState<PublicationMode>("preserve");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -309,6 +342,51 @@ export function NewFilePage() {
     }
   }
 
+  async function runArchiveValidationForSelectedFile(file: File): Promise<boolean> {
+    const ext = getExtension(file.name);
+    if (!ARCHIVE_EXTENSIONS.has(ext)) {
+      setValidatedArchiveKey("");
+      setArchiveValidationError("");
+      setArchiveReportVisible(false);
+      setShowArchiveValidationModal(false);
+      return true;
+    }
+
+    const runId = ++validationRunIdRef.current;
+    setIsValidatingArchive(true);
+    setShowArchiveValidationModal(true);
+    setArchiveProgress(1);
+    setArchiveElapsedSec(0);
+    setArchivePhase(t.archiveValidationReading);
+    setArchiveValidationError("");
+    setArchiveReportVisible(false);
+    setError("");
+    lastValidationProgressAtRef.current = Date.now();
+
+    const validationResult = await validateArchiveClientSide(file);
+    if (runId !== validationRunIdRef.current) return false;
+
+    setIsValidatingArchive(false);
+    if (!validationResult.ok) {
+      const message = mapArchiveErrorToMessage(validationResult.message);
+      setArchiveValidationError(message);
+      setValidatedArchiveKey("");
+      setError(`${t.archiveValidationFailed}. ${message}`);
+      setMainFileName("");
+      setSelectedMainFile(null);
+      if (mainFileInputRef.current) {
+        mainFileInputRef.current.value = "";
+      }
+      return false;
+    }
+
+    setArchiveValidationError("");
+    setArchiveReportVisible(false);
+    setValidatedArchiveKey(makeFileKey(file));
+    setShowArchiveValidationModal(false);
+    return true;
+  }
+
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setStatus("");
@@ -352,24 +430,9 @@ export function NewFilePage() {
       }
     }
 
-    if (hasMainFile && ARCHIVE_EXTENSIONS.has(mainExt)) {
-      setIsValidatingArchive(true);
-      setArchiveProgress(1);
-      setArchiveElapsedSec(0);
-      setArchivePhase(t.archiveValidationReading);
-      setArchiveValidationError("");
-      setArchiveReportVisible(false);
-      lastValidationProgressAtRef.current = Date.now();
-
-      const validationResult = await validateArchiveClientSide(mainFile);
-      setIsValidatingArchive(false);
-
-      if (!validationResult.ok) {
-        const message = mapArchiveErrorToMessage(validationResult.message);
-        setArchiveValidationError(message);
-        setError(`${t.archiveValidationFailed}. ${message}`);
-        return;
-      }
+    if (hasMainFile && ARCHIVE_EXTENSIONS.has(mainExt) && validatedArchiveKey !== makeFileKey(mainFile)) {
+      const isArchiveValid = await runArchiveValidationForSelectedFile(mainFile);
+      if (!isArchiveValid) return;
     }
 
     try {
@@ -382,7 +445,10 @@ export function NewFilePage() {
       setShowSuccessModal(true);
       form.reset();
       setMainFileName("");
+      setSelectedMainFile(null);
       setCoverFileName("");
+      setSelectedCoverFile(null);
+      setValidatedArchiveKey("");
       if (coverPreviewUrl) URL.revokeObjectURL(coverPreviewUrl);
       setCoverPreviewUrl("");
     } catch (error) {
@@ -428,6 +494,11 @@ export function NewFilePage() {
                 onChange={() => {
                   setPublicationMode("request_backup");
                   setMainFileName("");
+                  setSelectedMainFile(null);
+                  setValidatedArchiveKey("");
+                  setArchiveValidationError("");
+                  setArchiveReportVisible(false);
+                  setShowArchiveValidationModal(false);
                   if (mainFileInputRef.current) {
                     mainFileInputRef.current.value = "";
                   }
@@ -487,17 +558,16 @@ export function NewFilePage() {
             <legend>{t.newFileAssetsSection}</legend>
 
             <label htmlFor="file">{t.fieldMainFile}</label>
-            <label
-              htmlFor="file"
-              className={`file-upload-control ${publicationMode === "request_backup" ? "is-disabled" : ""}`}
-            >
-              <span className="file-upload-icon" aria-hidden="true">⤴</span>
-              <span className="file-upload-copy">
-                <strong>{mainFileName ? t.filePickerReplace : t.filePickerClickHint}</strong>
-                <span>{mainFileName || t.filePickerNoFile}</span>
-                <em>{t.filePickerMainDropHint} ({maxMainFileMb} MB)</em>
-              </span>
-            </label>
+            {publicationMode === "preserve" && !selectedMainFile && (
+              <label htmlFor="file" className="file-upload-control">
+                <span className="file-upload-icon" aria-hidden="true">⤴</span>
+                <span className="file-upload-copy">
+                  <strong>{mainFileName ? t.filePickerReplace : t.filePickerClickHint}</strong>
+                  <span>{mainFileName || t.filePickerNoFile}</span>
+                  <em>{t.filePickerMainDropHint} ({maxMainFileMb} MB)</em>
+                </span>
+              </label>
+            )}
             <input
               ref={mainFileInputRef}
               id="file"
@@ -506,8 +576,64 @@ export function NewFilePage() {
               className="file-input-native"
               disabled={publicationMode === "request_backup"}
               accept=".pdf,.zip,.cbz,.cbr,.txt,.doc,.docx"
-              onChange={(e) => setMainFileName(e.currentTarget.files?.[0]?.name ?? "")}
+              onChange={async (e) => {
+                const file = e.currentTarget.files?.[0];
+                setMainFileName(file?.name ?? "");
+                setArchiveValidationError("");
+                setArchiveReportVisible(false);
+                setShowArchiveValidationModal(false);
+                if (!file) {
+                  setValidatedArchiveKey("");
+                  setSelectedMainFile(null);
+                  return;
+                }
+                setSelectedMainFile({
+                  name: file.name,
+                  size: file.size,
+                  ext: getExtension(file.name),
+                  mime: file.type || "application/octet-stream"
+                });
+                if (publicationMode === "request_backup") {
+                  setValidatedArchiveKey("");
+                  setSelectedMainFile(null);
+                  return;
+                }
+                if (!ARCHIVE_EXTENSIONS.has(getExtension(file.name))) {
+                  setValidatedArchiveKey("");
+                  return;
+                }
+                await runArchiveValidationForSelectedFile(file);
+              }}
             />
+            {publicationMode === "preserve" && selectedMainFile && (
+              <div className="selected-file-preview" role="status" aria-live="polite">
+                <div className="selected-file-thumb" aria-hidden="true">
+                  {getMainFileBadge(selectedMainFile.ext)}
+                </div>
+                <div className="selected-file-meta">
+                  <strong>{selectedMainFile.name}</strong>
+                  <span>{t.fileType}: {selectedMainFile.ext ? selectedMainFile.ext.slice(1).toUpperCase() : "FILE"}</span>
+                  <span>{t.fileSize}: {formatBytes(selectedMainFile.size)}</span>
+                </div>
+                <button
+                  type="button"
+                  className="ghost-btn selected-file-remove-btn"
+                  onClick={() => {
+                    setMainFileName("");
+                    setSelectedMainFile(null);
+                    setValidatedArchiveKey("");
+                    setArchiveValidationError("");
+                    setArchiveReportVisible(false);
+                    setShowArchiveValidationModal(false);
+                    if (mainFileInputRef.current) {
+                      mainFileInputRef.current.value = "";
+                    }
+                  }}
+                >
+                  {t.removeMainFile}
+                </button>
+              </div>
+            )}
             <small>
               {publicationMode === "preserve"
                 ? mainFileName || `${t.publishModePreserveHint} (${maxMainFileMb} MB)`
@@ -515,15 +641,18 @@ export function NewFilePage() {
             </small>
 
             <label htmlFor="coverImage">{t.fieldCoverImage}</label>
-            <label htmlFor="coverImage" className="file-upload-control">
-              <span className="file-upload-icon" aria-hidden="true">🖼</span>
-              <span className="file-upload-copy">
-                <strong>{coverFileName ? t.filePickerReplace : t.filePickerClickHint}</strong>
-                <span>{coverFileName || t.filePickerNoFile}</span>
-                <em>{t.filePickerCoverDropHint}</em>
-              </span>
-            </label>
+            {!selectedCoverFile && (
+              <label htmlFor="coverImage" className="file-upload-control">
+                <span className="file-upload-icon" aria-hidden="true">▣</span>
+                <span className="file-upload-copy">
+                  <strong>{coverFileName ? t.filePickerReplace : t.filePickerClickHint}</strong>
+                  <span>{coverFileName || t.filePickerNoFile}</span>
+                  <em>{t.filePickerCoverDropHint}</em>
+                </span>
+              </label>
+            )}
             <input
+              ref={coverFileInputRef}
               id="coverImage"
               name="coverImage"
               type="file"
@@ -535,8 +664,15 @@ export function NewFilePage() {
                 setCoverFileName(file?.name ?? "");
                 if (coverPreviewUrl) URL.revokeObjectURL(coverPreviewUrl);
                 if (file) {
+                  setSelectedCoverFile({
+                    name: file.name,
+                    size: file.size,
+                    ext: getExtension(file.name),
+                    mime: file.type || "application/octet-stream"
+                  });
                   setCoverPreviewUrl(URL.createObjectURL(file));
                 } else {
+                  setSelectedCoverFile(null);
                   setCoverPreviewUrl("");
                 }
               }}
@@ -545,8 +681,30 @@ export function NewFilePage() {
             <div style={{ marginTop: "4px", fontSize: "0.85em", color: "var(--color-danger, #e74c3c)", fontWeight: "500" }}>
               ⚠️ {t.hintCoverRules}
             </div>
-            {coverPreviewUrl && (
-              <img className="cover-preview" src={coverPreviewUrl} alt={t.coverPreviewAlt} />
+            {coverPreviewUrl && selectedCoverFile && (
+              <div className="selected-cover-preview">
+                <img className="cover-preview" src={coverPreviewUrl} alt={t.coverPreviewAlt} />
+                <div className="selected-file-meta">
+                  <strong>{selectedCoverFile.name}</strong>
+                  <span>{t.fileType}: {selectedCoverFile.ext ? selectedCoverFile.ext.slice(1).toUpperCase() : "IMAGE"}</span>
+                  <span>{t.fileSize}: {formatBytes(selectedCoverFile.size)}</span>
+                </div>
+                <button
+                  type="button"
+                  className="ghost-btn selected-file-remove-btn"
+                  onClick={() => {
+                    setCoverFileName("");
+                    setSelectedCoverFile(null);
+                    if (coverPreviewUrl) URL.revokeObjectURL(coverPreviewUrl);
+                    setCoverPreviewUrl("");
+                    if (coverFileInputRef.current) {
+                      coverFileInputRef.current.value = "";
+                    }
+                  }}
+                >
+                  {t.removeCoverFile}
+                </button>
+              </div>
             )}
           </fieldset>
         </div>
@@ -561,11 +719,17 @@ export function NewFilePage() {
             onClick={() => {
               formRef.current?.reset();
               setMainFileName("");
+              setSelectedMainFile(null);
               setCoverFileName("");
+              setSelectedCoverFile(null);
               setStatus("");
               setError("");
               setShowSuccessModal(false);
               setProgress(0);
+              setValidatedArchiveKey("");
+              setArchiveValidationError("");
+              setArchiveReportVisible(false);
+              setShowArchiveValidationModal(false);
               if (coverPreviewUrl) URL.revokeObjectURL(coverPreviewUrl);
               setCoverPreviewUrl("");
             }}
@@ -588,7 +752,7 @@ export function NewFilePage() {
       </form>
       {error && <p className="upload-error">{error}</p>}
       {status && <p className="upload-success">{status}</p>}
-      {isValidatingArchive && (
+      {showArchiveValidationModal && (
         <div className="success-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="archive-validation-title">
           <div className="success-modal-card archive-validation-modal">
             <h3 id="archive-validation-title">{t.archiveValidationTitle}</h3>
@@ -601,12 +765,24 @@ export function NewFilePage() {
               <progress className="upload-progress" value={archiveProgress} max={100} />
             </div>
             <p className="archive-validation-time">{t.archiveValidationElapsed}: {archiveElapsedSec}s</p>
+            {archiveValidationError && <p className="upload-error">{archiveValidationError}</p>}
             {(archiveReportVisible || archiveValidationError) && (
               <div className="archive-validation-report">
                 <p>{t.archiveValidationReportHelp}</p>
                 <a className="detail-discord-link" href={discordInviteUrl} target="_blank" rel="noopener noreferrer">
                   {t.archiveValidationReportBtn}
                 </a>
+              </div>
+            )}
+            {archiveValidationError && (
+              <div className="success-modal-actions">
+                <button
+                  type="button"
+                  className="ghost-btn"
+                  onClick={() => setShowArchiveValidationModal(false)}
+                >
+                  {t.archiveValidationClose}
+                </button>
               </div>
             )}
           </div>
