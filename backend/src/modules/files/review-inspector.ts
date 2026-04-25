@@ -40,6 +40,11 @@ function normalizePath(name: string): string {
   return name.replace(/\\/g, "/").replace(/^\/+/, "").replace(/\/+/g, "/").trim();
 }
 
+function isDirectoryEntry(rawName: string): boolean {
+  const normalizedRaw = rawName.replace(/\\/g, "/").trim();
+  return normalizedRaw.endsWith("/");
+}
+
 function listZipEntries(bytes: Uint8Array): ZipEntry[] {
   const minEocdSize = 22;
   const searchStart = Math.max(0, bytes.length - 66000);
@@ -264,10 +269,14 @@ export async function inspectFileAsTree(fileAbsolutePath: string, originalFilena
   const buffer = await fs.readFile(fileAbsolutePath);
   const bytes = new Uint8Array(buffer);
   const entries = format === "zip" ? listZipEntries(bytes) : listRar4Entries(bytes);
-  const normalized = entries
+  const normalized = Array.from(
+    new Set(
+      entries
+    .filter((entry) => !isDirectoryEntry(entry.name))
     .map((entry) => normalizePath(entry.name))
-    .filter(Boolean)
-    .slice(0, MAX_TREE_ENTRIES);
+        .filter(Boolean)
+    )
+  ).slice(0, MAX_TREE_ENTRIES);
 
   const nodes = buildTree(normalized);
   const totals = summarizeTree(nodes);

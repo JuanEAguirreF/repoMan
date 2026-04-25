@@ -2,7 +2,6 @@ import { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import fs from "node:fs/promises";
 import fssync from "node:fs";
-import { pipeline } from "node:stream/promises";
 import crypto from "node:crypto";
 import { requireAuth, requireRole } from "../auth/auth.middleware.js";
 import { approveDeletionRequest, getPendingDeletionRequests, rejectDeletionRequest } from "../deletion/deletion.service.js";
@@ -241,14 +240,9 @@ export const adminRoutes: FastifyPluginAsync = async (fastify) => {
           metadata: { originalFilename: filename, bytes: stat.size, tokenId: tokenRow.id }
         });
 
-        reply.hijack();
-        await pipeline(fssync.createReadStream(absoluteFilePath), reply.raw);
-        return reply;
+        return reply.send(fssync.createReadStream(absoluteFilePath));
       } catch (error) {
-        if (!reply.sent) {
-          return reply.code(400).send({ error: (error as Error).message });
-        }
-        return reply;
+        return reply.code(400).send({ error: (error as Error).message });
       }
     }
   );
