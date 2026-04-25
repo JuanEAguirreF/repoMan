@@ -236,6 +236,7 @@ export function NewFilePage() {
   const [publicationMode, setPublicationMode] = useState<PublicationMode>("preserve");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [lastUploadedSlug, setLastUploadedSlug] = useState<string>("");
+  const [canViewUploadedItem, setCanViewUploadedItem] = useState(false);
   const [maxMainFileBytes, setMaxMainFileBytes] = useState<number>(DEFAULT_MAX_MAIN_FILE_BYTES);
   const { t, locale } = useI18n();
   const discordInviteUrl = ((import.meta.env.VITE_DISCORD_INVITE_URL as string | undefined)?.trim() || "https://discord.gg/jURmbDXjnf");
@@ -444,10 +445,15 @@ export function NewFilePage() {
     try {
       setIsSubmitting(true);
       setProgress(0);
-      const response = await apiPostFormWithProgress<{ item?: { id?: string; slug?: string } }>("/files", data, (pct) => setProgress(pct));
+      const response = await apiPostFormWithProgress<{
+        item?: { id?: string; slug?: string; status?: string; is_public?: boolean };
+      }>("/files", data, (pct) => setProgress(pct));
       setProgress(100);
       setStatus(t.uploadQueued);
-      setLastUploadedSlug(response?.item?.slug ?? "");
+      const uploadedItem = response?.item;
+      const viewAllowed = uploadedItem?.status === "active" && uploadedItem?.is_public === true;
+      setCanViewUploadedItem(viewAllowed);
+      setLastUploadedSlug(viewAllowed ? uploadedItem?.slug ?? "" : "");
       setShowSuccessModal(true);
       form.reset();
       setMainFileName("");
@@ -741,6 +747,7 @@ export function NewFilePage() {
               setError("");
               setShowSuccessModal(false);
               setProgress(0);
+              setCanViewUploadedItem(false);
               setValidatedArchiveKey("");
               setArchiveValidationError("");
               setArchiveReportVisible(false);
@@ -807,23 +814,26 @@ export function NewFilePage() {
         <div className="success-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="upload-success-title">
           <div className="success-modal-card">
             <h3 id="upload-success-title">{t.uploadSuccessTitle}</h3>
-            <p>{t.uploadSuccessBody}</p>
+            <p>{canViewUploadedItem ? t.uploadSuccessBody : t.uploadQueued}</p>
             <div className="success-modal-actions">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowSuccessModal(false);
-                  navigate(lastUploadedSlug ? buildPublicFilePath(lastUploadedSlug) : "/dashboard/files");
-                }}
-              >
-                {t.uploadSuccessView}
-              </button>
+              {canViewUploadedItem && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSuccessModal(false);
+                    navigate(lastUploadedSlug ? buildPublicFilePath(lastUploadedSlug) : "/dashboard/files");
+                  }}
+                >
+                  {t.uploadSuccessView}
+                </button>
+              )}
               <button
                 type="button"
                 className="ghost-btn"
                 onClick={() => {
                   setShowSuccessModal(false);
                   setStatus("");
+                  setCanViewUploadedItem(false);
                 }}
               >
                 {t.uploadSuccessMore}

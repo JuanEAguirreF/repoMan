@@ -84,7 +84,7 @@ export async function updateFileMetadata(
 export async function listPendingPublicationFiles(fastify: FastifyInstance) {
   const { data, error } = await fastify.supabaseAdmin
     .from("files")
-    .select("id,title,slug,category,status,owner_user_id,created_at,published_at")
+    .select("id,title,slug,category,status,owner_user_id,created_at,published_at,cover_image_path,mime_type,file_size_bytes,original_filename,has_backup")
     .eq("status", "pending_review")
     .order("created_at", { ascending: true });
   if (error) throw error;

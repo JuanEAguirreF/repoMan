@@ -87,6 +87,17 @@ create table if not exists system_settings (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists admin_review_download_tokens (
+  id uuid primary key default gen_random_uuid(),
+  file_id uuid not null references files(id) on delete cascade,
+  issued_to_user_id uuid not null references users_profiles(id) on delete cascade,
+  token_hash text not null unique,
+  expires_at timestamptz not null,
+  used_at timestamptz null,
+  used_by_ip text null,
+  created_at timestamptz not null default now()
+);
+
 -- Useful indexes
 create index if not exists idx_users_profiles_auth_user_id on users_profiles(auth_user_id);
 create index if not exists idx_files_owner_user_id on files(owner_user_id);
@@ -97,6 +108,9 @@ create index if not exists idx_file_edit_requests_status on file_edit_requests(s
 create index if not exists idx_file_edit_requests_file_id on file_edit_requests(file_id);
 create index if not exists idx_audit_logs_actor on audit_logs(actor_user_id);
 create index if not exists idx_audit_logs_target on audit_logs(target_type, target_id);
+create index if not exists idx_admin_review_download_tokens_file on admin_review_download_tokens(file_id);
+create index if not exists idx_admin_review_download_tokens_user on admin_review_download_tokens(issued_to_user_id);
+create index if not exists idx_admin_review_download_tokens_expires on admin_review_download_tokens(expires_at);
 
 -- Prevent duplicate pending request per file
 create unique index if not exists idx_unique_pending_deletion_request
@@ -128,3 +142,7 @@ select
   f.published_at
 from files f
 where f.is_public = true and f.status = 'active';
+
+alter table if exists admin_review_download_tokens enable row level security;
+alter table if exists admin_review_download_tokens force row level security;
+revoke all on table admin_review_download_tokens from anon, authenticated;

@@ -1295,6 +1295,44 @@ a {
   color: #d8c6ab;
 }
 
+.admin-publication-cover {
+  width: 70px;
+  aspect-ratio: 1/1.41;
+  object-fit: contain;
+  border-radius: 8px;
+  display: block;
+}
+
+.admin-review-tree-modal {
+  width: min(860px, 100%);
+}
+
+.review-tree-wrap {
+  margin-top: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #101722;
+  max-height: 360px;
+  overflow: auto;
+  padding: 10px 12px;
+}
+
+.review-tree-list {
+  margin: 0;
+  padding-left: 16px;
+  display: grid;
+  gap: 3px;
+}
+
+.review-tree-folder > span {
+  color: #ecd9be;
+  font-weight: 600;
+}
+
+.review-tree-file {
+  color: var(--muted);
+}
+
 .upload-page {
   max-width: 980px;
 }

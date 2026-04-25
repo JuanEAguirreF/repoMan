@@ -1,13 +1,41 @@
 import { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
+import fs from "node:fs/promises";
+import fssync from "node:fs";
+import { pipeline } from "node:stream/promises";
+import crypto from "node:crypto";
 import { requireAuth, requireRole } from "../auth/auth.middleware.js";
 import { approveDeletionRequest, getPendingDeletionRequests, rejectDeletionRequest } from "../deletion/deletion.service.js";
 import { getConfiguredMaxFileSizeBytes, setConfiguredMaxFileSizeBytes } from "./system-settings.repository.js";
 import { approvePublication, fetchFileById, listPendingPublicationQueue, rejectPublication } from "../files/files.service.js";
 import { insertAuditLog, listRecentAuditLogs } from "../audit/audit.repository.js";
 import { approveEditRequest, getPendingEditRequests, rejectEditRequest } from "../edit/edit.service.js";
+import { env } from "../../config/env.js";
+import { safeJoin, sanitizeFilename } from "../../utils/filename.js";
+import { inspectFileAsTree } from "../files/review-inspector.js";
+
+const DOWNLOAD_TOKEN_TTL_SECONDS = 120;
+
+function readClientIp(request: { ip: string; headers: Record<string, unknown> }) {
+  const forwarded = String(request.headers["x-forwarded-for"] || "").split(",")[0].trim();
+  return forwarded || request.ip || "unknown";
+}
 
 export const adminRoutes: FastifyPluginAsync = async (fastify) => {
+  const reviewRoles = ["super_admin"] as const;
+  const requireReviewAccess = requireRole(...reviewRoles);
+
+  async function getReviewablePendingFile(fileId: string) {
+    const file = await fetchFileById(fastify, fileId);
+    if (!file) throw new Error("File not found");
+    if (file.status !== "pending_review") throw new Error("Only pending review files can be handled in this endpoint.");
+    if (!file.has_backup || !file.file_path || file.file_path === "__no_backup__") {
+      throw new Error("This publication request does not include a backup file.");
+    }
+    const absoluteFilePath = safeJoin(env.STORAGE_ROOT, String(file.file_path));
+    return { file, absoluteFilePath };
+  }
+
   fastify.get("/settings/upload-limits", { preHandler: [requireAuth, requireRole("super_admin")] }, async (_request, reply) => {
     const maxFileSizeBytes = await getConfiguredMaxFileSizeBytes(fastify);
     return reply.send({
@@ -48,10 +76,182 @@ export const adminRoutes: FastifyPluginAsync = async (fastify) => {
     }
   );
 
-  fastify.get("/publication-requests", { preHandler: [requireAuth, requireRole("super_admin")] }, async (_request, reply) => {
+  fastify.get("/publication-requests", { preHandler: [requireAuth, requireReviewAccess] }, async (_request, reply) => {
     const items = await listPendingPublicationQueue(fastify);
     return reply.send({ items });
   });
+
+  fastify.get(
+    "/publication-requests/:fileId/content-tree",
+    { preHandler: [requireAuth, requireReviewAccess] },
+    async (request, reply) => {
+      try {
+        const fileId = (request.params as { fileId: string }).fileId;
+        const { file, absoluteFilePath } = await getReviewablePendingFile(fileId);
+        try {
+          await fs.access(absoluteFilePath);
+        } catch {
+          return reply.code(404).send({ error: "Stored file not found on server." });
+        }
+
+        const inspected = await inspectFileAsTree(absoluteFilePath, String(file.original_filename ?? ""));
+        await insertAuditLog(fastify, {
+          actorUserId: request.authUser!.profileId,
+          action: "publication.content_tree_inspected",
+          targetType: "file",
+          targetId: fileId,
+          metadata: { format: inspected.format, entries: inspected.summary.totalEntries }
+        });
+
+        reply.header("Cache-Control", "no-store");
+        reply.header("Pragma", "no-cache");
+        return reply.send({
+          file: {
+            id: file.id,
+            title: file.title,
+            originalFilename: file.original_filename,
+            mimeType: file.mime_type,
+            sizeBytes: file.file_size_bytes
+          },
+          inspection: inspected
+        });
+      } catch (error) {
+        return reply.code(400).send({ error: (error as Error).message });
+      }
+    }
+  );
+
+  fastify.post(
+    "/publication-requests/:fileId/download-token",
+    { preHandler: [requireAuth, requireReviewAccess] },
+    async (request, reply) => {
+      try {
+        const fileId = (request.params as { fileId: string }).fileId;
+        const { absoluteFilePath } = await getReviewablePendingFile(fileId);
+        try {
+          await fs.access(absoluteFilePath);
+        } catch {
+          return reply.code(404).send({ error: "Stored file not found on server." });
+        }
+
+        const token = crypto.randomBytes(32).toString("base64url");
+        const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+        const expiresAt = new Date(Date.now() + DOWNLOAD_TOKEN_TTL_SECONDS * 1000).toISOString();
+
+        const { data, error } = await fastify.supabaseAdmin
+          .from("admin_review_download_tokens")
+          .insert({
+            file_id: fileId,
+            issued_to_user_id: request.authUser!.profileId,
+            token_hash: tokenHash,
+            expires_at: expiresAt
+          })
+          .select("id")
+          .single();
+        if (error) throw error;
+
+        await insertAuditLog(fastify, {
+          actorUserId: request.authUser!.profileId,
+          action: "publication.download_token_issued",
+          targetType: "file",
+          targetId: fileId,
+          metadata: { tokenId: data?.id ?? null, expiresAt }
+        });
+
+        reply.header("Cache-Control", "no-store");
+        reply.header("Pragma", "no-cache");
+        return reply.send({
+          token,
+          expiresAt,
+          ttlSeconds: DOWNLOAD_TOKEN_TTL_SECONDS
+        });
+      } catch (error) {
+        const msg = (error as Error).message;
+        if (msg === "File not found") return reply.code(404).send({ error: msg });
+        return reply.code(400).send({ error: msg });
+      }
+    }
+  );
+
+  fastify.get(
+    "/publication-requests/:fileId/download",
+    { preHandler: [requireAuth, requireReviewAccess] },
+    async (request, reply) => {
+      try {
+        const fileId = (request.params as { fileId: string }).fileId;
+        const query = z.object({ token: z.string().min(32).max(300) }).safeParse(request.query ?? {});
+        if (!query.success) {
+          return reply.code(401).send({ error: "Missing or invalid download token." });
+        }
+        const tokenHash = crypto.createHash("sha256").update(query.data.token).digest("hex");
+
+        const { data: tokenRow, error: tokenError } = await fastify.supabaseAdmin
+          .from("admin_review_download_tokens")
+          .select("id,file_id,issued_to_user_id,expires_at,used_at")
+          .eq("token_hash", tokenHash)
+          .maybeSingle();
+        if (tokenError) throw tokenError;
+        if (!tokenRow) return reply.code(401).send({ error: "Invalid download token." });
+        if (tokenRow.file_id !== fileId || tokenRow.issued_to_user_id !== request.authUser!.profileId) {
+          return reply.code(403).send({ error: "Download token is not valid for this file or user." });
+        }
+        if (tokenRow.used_at) {
+          return reply.code(401).send({ error: "Download token already used." });
+        }
+        if (new Date(tokenRow.expires_at).getTime() <= Date.now()) {
+          return reply.code(401).send({ error: "Download token expired." });
+        }
+
+        const requesterIp = readClientIp(request as unknown as { ip: string; headers: Record<string, unknown> });
+        const nowIso = new Date().toISOString();
+        const { data: consumedToken, error: consumeErr } = await fastify.supabaseAdmin
+          .from("admin_review_download_tokens")
+          .update({ used_at: nowIso, used_by_ip: requesterIp })
+          .eq("id", tokenRow.id)
+          .is("used_at", null)
+          .gt("expires_at", nowIso)
+          .select("id")
+          .maybeSingle();
+        if (consumeErr) throw consumeErr;
+        if (!consumedToken) {
+          return reply.code(401).send({ error: "Download token already consumed or expired." });
+        }
+
+        const { file, absoluteFilePath } = await getReviewablePendingFile(fileId);
+        let stat;
+        try {
+          stat = await fs.stat(absoluteFilePath);
+        } catch {
+          return reply.code(404).send({ error: "Stored file not found on server." });
+        }
+
+        const filename = sanitizeFilename(String(file.original_filename || "review-file.bin"));
+        reply.header("Cache-Control", "no-store");
+        reply.header("Pragma", "no-cache");
+        reply.header("X-Content-Type-Options", "nosniff");
+        reply.header("Content-Type", String(file.mime_type || "application/octet-stream"));
+        reply.header("Content-Length", String(stat.size));
+        reply.header("Content-Disposition", `attachment; filename="${filename}"`);
+
+        await insertAuditLog(fastify, {
+          actorUserId: request.authUser!.profileId,
+          action: "publication.file_downloaded_for_review",
+          targetType: "file",
+          targetId: fileId,
+          metadata: { originalFilename: filename, bytes: stat.size, tokenId: tokenRow.id }
+        });
+
+        reply.hijack();
+        await pipeline(fssync.createReadStream(absoluteFilePath), reply.raw);
+        return reply;
+      } catch (error) {
+        if (!reply.sent) {
+          return reply.code(400).send({ error: (error as Error).message });
+        }
+        return reply;
+      }
+    }
+  );
 
   fastify.post(
     "/publication-requests/:fileId/approve",
