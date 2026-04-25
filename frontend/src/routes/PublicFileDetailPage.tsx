@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { apiGet, resolveCoverUrl } from "../lib/api";
 import { useSeo } from "../lib/seo";
 import { CatalogFile } from "../types";
@@ -129,6 +129,11 @@ export function PublicFileDetailPage() {
 
   return (
     <section className="detail-card">
+      <nav className="detail-breadcrumbs" aria-label="Breadcrumb">
+        <Link to="/">{t.navPublicCatalog}</Link>
+        <span aria-hidden="true">/</span>
+        <span>{displayTitle}</span>
+      </nav>
       <h1 className="detail-title">{displayTitle}</h1>
       <div className="detail-layout">
         <div className="detail-cover">
@@ -166,8 +171,12 @@ export function PublicFileDetailPage() {
               <dd>{currentItem.category}</dd>
             </div>
             <div>
-              <dt>{t.fileType}</dt>
-              <dd>{currentItem.has_backup ? displayFileType(currentItem.mime_type) : t.noBackupLabel}</dd>
+              <dt>{t.fileType} / {t.fileSize}</dt>
+              <dd>
+                {currentItem.has_backup
+                  ? `${displayFileType(currentItem.mime_type)} · ${(currentItem.file_size_bytes / 1024 / 1024).toFixed(2)} MB`
+                  : `${t.noBackupLabel} · -`}
+              </dd>
             </div>
             <div>
               <dt>{t.contentOrigin}</dt>
@@ -178,10 +187,6 @@ export function PublicFileDetailPage() {
                     ? t.contentOriginManhua
                     : t.contentOriginManga}
               </dd>
-            </div>
-            <div>
-              <dt>{t.fileSize}</dt>
-              <dd>{currentItem.has_backup ? `${(currentItem.file_size_bytes / 1024 / 1024).toFixed(2)} MB` : "-"}</dd>
             </div>
             <div>
               <dt>{t.uploadedAt}</dt>

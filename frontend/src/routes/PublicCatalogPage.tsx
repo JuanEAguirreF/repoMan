@@ -209,8 +209,10 @@ export function PublicCatalogPage() {
                     <img src={resolveCoverUrl(item.id, item.cover_image_path)} alt={item.title} />
                   </div>
                   <div>
-                    <h3>{(item.alternate_name || "").trim() || item.title}</h3>
-                    {!!item.alternate_name?.trim() && <p className="meta-line">{item.title}</p>}
+                    <h3>{item.title}</h3>
+                    {!!item.alternate_name?.trim() && (
+                      <span className="seo-hidden">Alternate name: {item.alternate_name}</span>
+                    )}
                     {!!item.author?.trim() && <p className="meta-line">{t.detailAuthor}: {item.author}</p>}
                     <p className="meta-line">{item.category}</p>
                     <p className="meta-line">
