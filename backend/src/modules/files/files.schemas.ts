@@ -3,6 +3,8 @@ import { z } from "zod";
 export const fileMetadataSchema = z.object({
   title: z.string().min(1).max(200),
   alternateName: z.string().max(200).optional(),
+  author: z.string().max(200).optional(),
+  artist: z.string().max(200).optional(),
   description: z.string().min(1).max(3000),
   category: z.string().min(1).max(120),
   contentOrigin: z.enum(["manga", "manhwa", "manhua"]).default("manga"),

@@ -11,6 +11,8 @@ export type CatalogFile = {
   id: string;
   title: string;
   alternate_name?: string | null;
+  author?: string | null;
+  artist?: string | null;
   slug: string;
   description: string;
   category: string;

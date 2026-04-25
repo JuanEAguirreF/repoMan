@@ -192,6 +192,8 @@ export function PublicCatalogPage() {
                 <div>
                   <h3>{(item.alternate_name || "").trim() || item.title}</h3>
                   {!!item.alternate_name?.trim() && <p className="meta-line">{item.title}</p>}
+                  {!!item.author?.trim() && <p className="meta-line">{t.detailAuthor}: {item.author}</p>}
+                  {!!item.artist?.trim() && <p className="meta-line">{t.detailArtist}: {item.artist}</p>}
                   <p className="meta-line">{item.category}</p>
                   <p className="meta-line">
                     {t.contentOrigin}: {item.content_origin === "manhwa" ? t.contentOriginManhwa : item.content_origin === "manhua" ? t.contentOriginManhua : t.contentOriginManga}

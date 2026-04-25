@@ -149,6 +149,18 @@ export function PublicFileDetailPage() {
                 <dd>{currentItem.alternate_name}</dd>
               </div>
             )}
+            {!!currentItem.author?.trim() && (
+              <div>
+                <dt>{t.detailAuthor}</dt>
+                <dd>{currentItem.author}</dd>
+              </div>
+            )}
+            {!!currentItem.artist?.trim() && (
+              <div>
+                <dt>{t.detailArtist}</dt>
+                <dd>{currentItem.artist}</dd>
+              </div>
+            )}
             <div>
               <dt>{t.colCategory}</dt>
               <dd>{currentItem.category}</dd>

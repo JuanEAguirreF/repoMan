@@ -82,6 +82,8 @@ export async function createFileUpload(fastify: FastifyInstance, params: {
   const parsedMetadata = fileMetadataSchema.parse({
     title: params.metadata.title,
     alternateName: params.metadata.alternateName,
+    author: params.metadata.author,
+    artist: params.metadata.artist,
     description: params.metadata.description,
     category: params.metadata.category,
     contentOrigin: params.metadata.contentOrigin,
@@ -152,6 +154,8 @@ export async function createFileUpload(fastify: FastifyInstance, params: {
     owner_user_id: params.ownerUserId,
     title: parsedMetadata.title,
     alternate_name: parsedMetadata.alternateName?.trim() ? parsedMetadata.alternateName.trim() : null,
+    author: parsedMetadata.author?.trim() ? parsedMetadata.author.trim() : null,
+    artist: parsedMetadata.artist?.trim() ? parsedMetadata.artist.trim() : null,
     slug: uniqueSlug,
     description: parsedMetadata.description,
     category: parsedMetadata.category,

@@ -396,6 +396,8 @@ export function NewFilePage() {
     const data = new FormData(form);
     const title = String(data.get("title") || "").trim();
     const alternateName = String(data.get("alternateName") || "").trim();
+    const author = String(data.get("author") || "").trim();
+    const artist = String(data.get("artist") || "").trim();
     const description = String(data.get("description") || "").trim();
     const category = String(data.get("category") || "").trim();
     const extraMetadata = String(data.get("extraMetadata") || "").trim();
@@ -405,6 +407,8 @@ export function NewFilePage() {
 
     if (!title) return setError(t.validationTitleRequired);
     if (alternateName.length > 200) return setError(t.validationAlternateNameLength);
+    if (author.length > 200) return setError(t.validationAuthorLength);
+    if (artist.length > 200) return setError(t.validationArtistLength);
     if (!description) return setError(t.validationDescriptionRequired);
     if (!category) return setError(t.validationCategoryRequired);
     if (!(categories as string[]).includes(category)) return setError(t.validationCategoryInvalid);
@@ -524,6 +528,12 @@ export function NewFilePage() {
 
             <label htmlFor="alternateName">{t.fieldAlternateName}</label>
             <input id="alternateName" name="alternateName" placeholder={t.placeholderAlternateName} />
+
+            <label htmlFor="author">{t.fieldAuthor}</label>
+            <input id="author" name="author" placeholder={t.placeholderAuthor} />
+
+            <label htmlFor="artist">{t.fieldArtist}</label>
+            <input id="artist" name="artist" placeholder={t.placeholderArtist} />
 
             <label htmlFor="description">{t.fieldDescription}</label>
             <textarea id="description" name="description" required placeholder={t.placeholderDescription} rows={4} />
