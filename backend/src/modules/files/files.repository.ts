@@ -114,7 +114,7 @@ export async function listPublicFiles(
   if (q.length > 0) {
     const escaped = q.replace(/[,()]/g, " ").replace(/\s+/g, " ").trim();
     queryBuilder = queryBuilder.or(
-      `title.ilike.%${escaped}%,alternate_name.ilike.%${escaped}%,description.ilike.%${escaped}%,category.ilike.%${escaped}%`
+      `title.ilike.%${escaped}%,alternate_name.ilike.%${escaped}%,author.ilike.%${escaped}%,artist.ilike.%${escaped}%,description.ilike.%${escaped}%,category.ilike.%${escaped}%`
     );
   }
 

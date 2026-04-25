@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiGet, resolveCoverUrl } from "../lib/api";
 import { useSeo } from "../lib/seo";
@@ -6,20 +6,6 @@ import { CatalogFile } from "../types";
 import { useI18n } from "../lib/i18n";
 import { SpiralHero } from "../components/SpiralHero";
 import { buildPublicFilePath } from "../lib/slug";
-
-function displayFileType(mimeType: string): string {
-  const lower = mimeType.toLowerCase();
-  if (lower.includes("pdf")) return "PDF";
-  if (lower.includes("comicbook+zip") || lower.includes("x-cbz")) return "CBZ";
-  if (lower.includes("comicbook-rar") || lower.includes("x-cbr")) return "CBR";
-  if (lower.includes("zip")) return "ZIP";
-  if (lower.includes("rar")) return "RAR";
-  if (lower.includes("msword")) return "DOC";
-  if (lower.includes("wordprocessingml")) return "DOCX";
-  if (lower.includes("text/plain")) return "TXT";
-  if (lower.includes("octet-stream")) return "BIN";
-  return mimeType;
-}
 
 function shuffled<T>(input: T[]): T[] {
   const arr = [...input];
@@ -33,7 +19,8 @@ function shuffled<T>(input: T[]): T[] {
 export function PublicCatalogPage() {
   const [items, setItems] = useState<CatalogFile[]>([]);
   const [topUploaders, setTopUploaders] = useState<{ username: string, count: number }[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [searching, setSearching] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
@@ -49,9 +36,17 @@ export function PublicCatalogPage() {
     "https://ideas.comunidaddelmanga.com");
   const siteUrl = ((import.meta.env.VITE_SITE_URL as string | undefined)?.trim().replace(/\/$/, "") ||
     "https://repoman.comunidaddelmanga.com");
+  const didFirstLoadRef = useRef(false);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const shouldRestoreFocusRef = useRef(false);
+  const caretPosRef = useRef<number | null>(null);
+  const skeletonItems = useMemo(() => Array.from({ length: 9 }, (_, i) => i), []);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setSearch(searchInput.trim()), 250);
+    const timer = window.setTimeout(() => {
+      const normalized = searchInput.trim();
+      setSearch((prev) => (prev === normalized ? prev : normalized));
+    }, 600);
     return () => window.clearTimeout(timer);
   }, [searchInput]);
 
@@ -78,9 +73,32 @@ export function PublicCatalogPage() {
   }, []);
 
   useEffect(() => {
-    setLoading(true);
     setPage(1);
-    loadCatalog(1, false).finally(() => setLoading(false));
+    const isFirstLoad = !didFirstLoadRef.current;
+    if (isFirstLoad) {
+      setInitialLoading(true);
+    } else {
+      setSearching(true);
+    }
+
+    loadCatalog(1, false)
+      .finally(() => {
+        if (isFirstLoad) {
+          didFirstLoadRef.current = true;
+          setInitialLoading(false);
+        } else {
+          setSearching(false);
+        }
+
+        if (shouldRestoreFocusRef.current && searchInputRef.current) {
+          const input = searchInputRef.current;
+          if (document.activeElement !== input) {
+            input.focus({ preventScroll: true });
+            const targetPos = caretPosRef.current ?? input.value.length;
+            input.setSelectionRange(targetPos, targetPos);
+          }
+        }
+      });
   }, [search]);
 
   const heroItems = useMemo(
@@ -160,7 +178,7 @@ export function PublicCatalogPage() {
     ]
   });
 
-  if (loading) return <p>{t.catalogLoading}</p>;
+  if (initialLoading) return <p>{t.catalogLoading}</p>;
 
   return (
     <section>
@@ -181,46 +199,52 @@ export function PublicCatalogPage() {
             <span>
               {totalItems} {t.catalogResultCount}
             </span>
-            <small>{t.catalogMetaOnlyDesc}</small>
+            <small>{searching ? t.loading : t.catalogMetaOnlyDesc}</small>
           </div>
-          <div className="catalog-grid">
-            {items.map((item) => (
-              <article key={item.id} className="catalog-card">
-                <div className="catalog-card-media">
-                  <img src={resolveCoverUrl(item.id, item.cover_image_path)} alt={item.title} />
-                </div>
-                <div>
-                  <h3>{(item.alternate_name || "").trim() || item.title}</h3>
-                  {!!item.alternate_name?.trim() && <p className="meta-line">{item.title}</p>}
-                  {!!item.author?.trim() && <p className="meta-line">{t.detailAuthor}: {item.author}</p>}
-                  {!!item.artist?.trim() && <p className="meta-line">{t.detailArtist}: {item.artist}</p>}
-                  <p className="meta-line">{item.category}</p>
-                  <p className="meta-line">
-                    {t.contentOrigin}: {item.content_origin === "manhwa" ? t.contentOriginManhwa : item.content_origin === "manhua" ? t.contentOriginManhua : t.contentOriginManga}
-                  </p>
-                  {item.has_backup ? (
-                    <>
-                      <p className="meta-line">
-                        {t.fileType}: {displayFileType(item.mime_type)}
-                      </p>
-                      <p className="meta-line">
-                        {t.fileSize}: {(item.file_size_bytes / 1024 / 1024).toFixed(2)} MB
-                      </p>
-                    </>
-                  ) : (
-                    <p className="meta-line" style={{ color: "var(--danger, #c0392b)", fontWeight: 600 }}>
-                      {t.noBackupLabel}
+          <div className={`catalog-grid-wrap ${searching ? "is-searching" : ""}`}>
+            <div className="catalog-grid catalog-grid-base">
+              {items.map((item) => (
+                <article key={item.id} className="catalog-card">
+                  <div className="catalog-card-media">
+                    <img src={resolveCoverUrl(item.id, item.cover_image_path)} alt={item.title} />
+                  </div>
+                  <div>
+                    <h3>{(item.alternate_name || "").trim() || item.title}</h3>
+                    {!!item.alternate_name?.trim() && <p className="meta-line">{item.title}</p>}
+                    {!!item.author?.trim() && <p className="meta-line">{t.detailAuthor}: {item.author}</p>}
+                    <p className="meta-line">{item.category}</p>
+                    <p className="meta-line">
+                      {t.contentOrigin}: {item.content_origin === "manhwa" ? t.contentOriginManhwa : item.content_origin === "manhua" ? t.contentOriginManhua : t.contentOriginManga}
                     </p>
-                  )}
-                  <Link className="meta-link" to={buildPublicFilePath(item.slug)}>
-                    {t.viewMetadata}
-                  </Link>
-                </div>
-              </article>
-            ))}
+                    {!item.has_backup && (
+                      <p className="meta-line" style={{ color: "var(--danger, #c0392b)", fontWeight: 600 }}>
+                        {t.noBackupLabel}
+                      </p>
+                    )}
+                    <Link className="meta-link" to={buildPublicFilePath(item.slug)}>
+                      {t.viewMetadata}
+                    </Link>
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            <div className="catalog-grid catalog-grid-overlay" aria-hidden="true">
+              {skeletonItems.map((idx) => (
+                <article key={`skeleton-${idx}`} className="catalog-card catalog-card-skeleton">
+                  <div className="catalog-card-media skeleton-block" />
+                  <div>
+                    <div className="skeleton-line skeleton-title" />
+                    <div className="skeleton-line" />
+                    <div className="skeleton-line skeleton-short" />
+                    <div className="skeleton-line skeleton-short" />
+                  </div>
+                </article>
+              ))}
+            </div>
           </div>
-          {items.length === 0 && <p>{t.catalogNoResults}</p>}
-          {hasMore && (
+          {!searching && items.length === 0 && <p>{t.catalogNoResults}</p>}
+          {!searching && hasMore && (
             <div style={{ marginTop: 12 }}>
               <button className="chip-btn" onClick={loadMore} disabled={loadingMore}>
                 {loadingMore ? t.loading : t.catalogLoadMore}
@@ -234,11 +258,19 @@ export function PublicCatalogPage() {
           <p>{t.sidebarDesc}</p>
           <label htmlFor="catalog-search">{t.catalogSearchLabel}</label>
           <input
+            ref={searchInputRef}
             id="catalog-search"
             className="search-input"
             placeholder={t.catalogSearch}
             value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
+            onChange={(e) => {
+              shouldRestoreFocusRef.current = document.activeElement === e.target;
+              caretPosRef.current = e.target.selectionStart ?? e.target.value.length;
+              setSearchInput(e.target.value);
+            }}
+            onBlur={() => {
+              shouldRestoreFocusRef.current = false;
+            }}
           />
           <div className="stat-box">
             <strong>{t.quickStats}</strong>
