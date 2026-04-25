@@ -18,6 +18,7 @@ create table if not exists files (
   id uuid primary key default gen_random_uuid(),
   owner_user_id uuid not null references users_profiles(id),
   title text not null,
+  alternate_name text null,
   slug text not null unique,
   description text not null,
   category text not null,
@@ -109,6 +110,7 @@ create or replace view public_catalog_files as
 select
   f.id,
   f.title,
+  f.alternate_name,
   f.slug,
   f.description,
   f.category,

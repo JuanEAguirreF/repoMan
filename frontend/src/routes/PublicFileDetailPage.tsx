@@ -55,9 +55,10 @@ export function PublicFileDetailPage() {
 
   const coverImageUrl = item ? resolveCoverUrl(item.id, item.cover_image_path) : undefined;
   const safeDescription = item ? item.description.slice(0, 160) : t.detailLoading;
+  const seoTitle = item ? (((item.alternate_name || "").trim() || item.title)) : t.detailLoading;
 
   useSeo({
-    title: item ? `${item.title} - ${t.viewMetadata}` : t.detailLoading,
+    title: item ? `${seoTitle} - ${t.viewMetadata}` : t.detailLoading,
     description: safeDescription,
     path: item ? buildPublicFilePath(item.slug) : "/",
     lang: locale,
@@ -70,7 +71,7 @@ export function PublicFileDetailPage() {
           {
             "@context": "https://schema.org",
             "@type": "ComicStory",
-            name: item.title,
+            name: seoTitle,
             description: safeDescription,
             genre: item.category,
             keywords: item.tags?.join(", "),
@@ -92,7 +93,7 @@ export function PublicFileDetailPage() {
               {
                 "@type": "ListItem",
                 position: 2,
-                name: item.title,
+                name: seoTitle,
                 item: `${siteUrl}${buildPublicFilePath(item.slug)}`
               }
             ]
@@ -104,14 +105,15 @@ export function PublicFileDetailPage() {
   if (error) return <p>{error}</p>;
   if (!item) return <p>{t.detailLoading}</p>;
   const currentItem = item;
+  const displayTitle = (currentItem.alternate_name || "").trim() || currentItem.title;
 
   const shareMessage = currentItem.has_backup
-    ? `'${currentItem.title}'. Esta obra está conservada actualmente en nuestra web.`
-    : `¿Reconoces esta obra? '${currentItem.title}'. Si la tienes descargada, o crees que alguien más puede tenerla, comparte esta página con esa persona para ayudar a conservarla.`;
+    ? `'${displayTitle}'. Esta obra está conservada actualmente en nuestra web.`
+    : `¿Reconoces esta obra? '${displayTitle}'. Si la tienes descargada, o crees que alguien más puede tenerla, comparte esta página con esa persona para ayudar a conservarla.`;
 
   async function shareEntry() {
     const url = window.location.href;
-    const payload = { title: currentItem.title, text: shareMessage, url };
+    const payload = { title: displayTitle, text: shareMessage, url };
     try {
       if (navigator.share) {
         await navigator.share(payload);
@@ -127,7 +129,7 @@ export function PublicFileDetailPage() {
 
   return (
     <section className="detail-card">
-      <h1 className="detail-title">{currentItem.title}</h1>
+      <h1 className="detail-title">{displayTitle}</h1>
       <div className="detail-layout">
         <div className="detail-cover">
           <img src={resolveCoverUrl(currentItem.id, currentItem.cover_image_path)} alt={currentItem.title} />
@@ -135,6 +137,18 @@ export function PublicFileDetailPage() {
         <div className="detail-side">
           <p>{currentItem.description}</p>
           <dl className="detail-meta">
+            {!!currentItem.alternate_name?.trim() && (
+              <div>
+                <dt>{t.detailOriginalTitle}</dt>
+                <dd>{currentItem.title}</dd>
+              </div>
+            )}
+            {!!currentItem.alternate_name?.trim() && (
+              <div>
+                <dt>{t.detailAlternateName}</dt>
+                <dd>{currentItem.alternate_name}</dd>
+              </div>
+            )}
             <div>
               <dt>{t.colCategory}</dt>
               <dd>{currentItem.category}</dd>

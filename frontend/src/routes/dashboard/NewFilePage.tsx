@@ -395,6 +395,7 @@ export function NewFilePage() {
     const form = event.currentTarget;
     const data = new FormData(form);
     const title = String(data.get("title") || "").trim();
+    const alternateName = String(data.get("alternateName") || "").trim();
     const description = String(data.get("description") || "").trim();
     const category = String(data.get("category") || "").trim();
     const extraMetadata = String(data.get("extraMetadata") || "").trim();
@@ -403,6 +404,7 @@ export function NewFilePage() {
     const coverImage = data.get("coverImage");
 
     if (!title) return setError(t.validationTitleRequired);
+    if (alternateName.length > 200) return setError(t.validationAlternateNameLength);
     if (!description) return setError(t.validationDescriptionRequired);
     if (!category) return setError(t.validationCategoryRequired);
     if (!(categories as string[]).includes(category)) return setError(t.validationCategoryInvalid);
@@ -519,6 +521,9 @@ export function NewFilePage() {
 
             <label htmlFor="title">{t.fieldTitle}</label>
             <input id="title" name="title" required placeholder={t.placeholderTitle} />
+
+            <label htmlFor="alternateName">{t.fieldAlternateName}</label>
+            <input id="alternateName" name="alternateName" placeholder={t.placeholderAlternateName} />
 
             <label htmlFor="description">{t.fieldDescription}</label>
             <textarea id="description" name="description" required placeholder={t.placeholderDescription} rows={4} />

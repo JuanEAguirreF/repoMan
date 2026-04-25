@@ -14,7 +14,7 @@ export async function createFileRecord(
 export async function listFilesByOwner(fastify: FastifyInstance, ownerUserId: string) {
   const { data, error } = await fastify.supabaseAdmin
     .from("files")
-    .select("id,title,slug,description,category,content_origin,mime_type,file_size_bytes,status,created_at,cover_image_path,has_backup")
+    .select("id,title,alternate_name,slug,description,category,content_origin,mime_type,file_size_bytes,status,created_at,cover_image_path,has_backup")
     .eq("owner_user_id", ownerUserId)
     .order("created_at", { ascending: false });
   if (error) throw error;
@@ -104,7 +104,7 @@ export async function listPublicFiles(
   let queryBuilder = fastify.supabaseAdmin
     .from("files")
     .select(
-      "id,title,slug,description,category,content_origin,tags,mime_type,file_size_bytes,created_at,published_at,cover_image_path,status,is_public,has_backup",
+      "id,title,alternate_name,slug,description,category,content_origin,tags,mime_type,file_size_bytes,created_at,published_at,cover_image_path,status,is_public,has_backup",
       { count: "exact" }
     )
     .eq("status", "active")
@@ -146,7 +146,7 @@ export async function listAllPublicFilesForSitemap(fastify: FastifyInstance) {
 
 export async function getPublicFileById(fastify: FastifyInstance, fileId: string) {
   const selectClause =
-    "id,title,slug,description,category,content_origin,tags,mime_type,file_size_bytes,created_at,published_at,cover_image_path,status,is_public,has_backup";
+    "id,title,alternate_name,slug,description,category,content_origin,tags,mime_type,file_size_bytes,created_at,published_at,cover_image_path,status,is_public,has_backup";
   const query = fastify.supabaseAdmin
     .from("files")
     .select(selectClause)

@@ -89,7 +89,7 @@ export function PublicCatalogPage() {
 
       const source = items.map((item) => ({
         id: item.id,
-        label: item.title,
+        label: (item.alternate_name || "").trim() || item.title,
         imageUrl: resolveCoverUrl(item.id, item.cover_image_path),
         href: buildPublicFilePath(item.slug)
       }));
@@ -190,7 +190,8 @@ export function PublicCatalogPage() {
                   <img src={resolveCoverUrl(item.id, item.cover_image_path)} alt={item.title} />
                 </div>
                 <div>
-                  <h3>{item.title}</h3>
+                  <h3>{(item.alternate_name || "").trim() || item.title}</h3>
+                  {!!item.alternate_name?.trim() && <p className="meta-line">{item.title}</p>}
                   <p className="meta-line">{item.category}</p>
                   <p className="meta-line">
                     {t.contentOrigin}: {item.content_origin === "manhwa" ? t.contentOriginManhwa : item.content_origin === "manhua" ? t.contentOriginManhua : t.contentOriginManga}
