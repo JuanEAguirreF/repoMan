@@ -34,13 +34,15 @@ export async function apiPost<T>(path: string, body?: unknown, auth = false): Pr
 export async function apiPostFormWithProgress<T>(
   path: string,
   formData: FormData,
-  onProgress: (pct: number) => void
+  onProgress: (pct: number) => void,
+  signal?: AbortSignal
 ): Promise<T> {
   const headers = await authHeaders();
 
   return new Promise<T>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("POST", `${API_BASE}${path}`, true);
+    xhr.timeout = 300000;
 
     Object.entries(headers).forEach(([key, value]) => {
       xhr.setRequestHeader(key, value);
@@ -56,6 +58,14 @@ export async function apiPostFormWithProgress<T>(
       reject(new Error("Network error"));
     };
 
+    xhr.ontimeout = () => {
+      reject(new Error("Upload timed out. Please try again."));
+    };
+
+    xhr.onabort = () => {
+      reject(new Error("Upload aborted."));
+    };
+
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) {
         try {
@@ -69,6 +79,18 @@ export async function apiPostFormWithProgress<T>(
     };
 
     xhr.send(formData);
+
+    if (signal) {
+      if (signal.aborted) {
+        xhr.abort();
+        return;
+      }
+      const onAbort = () => xhr.abort();
+      signal.addEventListener("abort", onAbort, { once: true });
+      xhr.addEventListener("loadend", () => {
+        signal.removeEventListener("abort", onAbort);
+      });
+    }
   });
 }
 

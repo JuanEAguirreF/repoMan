@@ -250,6 +250,10 @@ export function NewFilePage() {
   const formRef = useRef<HTMLFormElement | null>(null);
   const mainFileInputRef = useRef<HTMLInputElement | null>(null);
   const coverFileInputRef = useRef<HTMLInputElement | null>(null);
+  const uploadAbortRef = useRef<AbortController | null>(null);
+  const uploadLastProgressAtRef = useRef<number>(0);
+  const uploadLastPctRef = useRef<number>(0);
+  const retryAfterAbortRef = useRef(false);
   const lastValidationProgressAtRef = useRef<number>(0);
   const validationRunIdRef = useRef<number>(0);
   const [status, setStatus] = useState("");
@@ -264,6 +268,7 @@ export function NewFilePage() {
   const [archiveValidationError, setArchiveValidationError] = useState("");
   const [validatedArchiveKey, setValidatedArchiveKey] = useState("");
   const [progress, setProgress] = useState(0);
+  const [showUploadStalledModal, setShowUploadStalledModal] = useState(false);
   const [mainFileName, setMainFileName] = useState("");
   const [selectedMainFile, setSelectedMainFile] = useState<SelectedFileMeta | null>(null);
   const [coverFileName, setCoverFileName] = useState("");
@@ -305,7 +310,14 @@ export function NewFilePage() {
             extraMetaPresetAll: "Agregar sugerencias",
             extraMetaMoveUp: "Subir",
             extraMetaMoveDown: "Bajar",
-            uploadSuccessMoreSameSeries: "Subir más del mismo manga"
+            uploadSuccessMoreSameSeries: "Subir más del mismo manga",
+            uploadCancelBtn: "Cancelar subida",
+            uploadCancelled: "Subida cancelada. Puedes corregir y reintentar.",
+            uploadStalledTitle: "La subida parece detenida",
+            uploadStalledBody:
+              "Detectamos que el progreso no avanza desde hace un momento. Puede haber un problema de red o del servidor.",
+            uploadStalledCancel: "Cancelar",
+            uploadStalledRetry: "Cancelar y reintentar"
           }
         : {
             optionalToggleShow: "Show optional fields",
@@ -327,7 +339,14 @@ export function NewFilePage() {
             extraMetaPresetAll: "Add suggestions",
             extraMetaMoveUp: "Up",
             extraMetaMoveDown: "Down",
-            uploadSuccessMoreSameSeries: "Upload more from the same manga"
+            uploadSuccessMoreSameSeries: "Upload more from the same manga",
+            uploadCancelBtn: "Cancel upload",
+            uploadCancelled: "Upload canceled. You can adjust data and retry.",
+            uploadStalledTitle: "Upload seems stuck",
+            uploadStalledBody:
+              "Progress has not moved for a while. There may be a network or server issue.",
+            uploadStalledCancel: "Cancel",
+            uploadStalledRetry: "Cancel and retry"
           },
     [locale]
   );
@@ -409,6 +428,18 @@ export function NewFilePage() {
     }, 500);
     return () => window.clearInterval(timer);
   }, [isValidatingArchive]);
+
+  useEffect(() => {
+    if (!isSubmitting) return;
+    const timer = window.setInterval(() => {
+      const stalledMs = Date.now() - uploadLastProgressAtRef.current;
+      const currentPct = uploadLastPctRef.current;
+      if (!showUploadStalledModal && currentPct > 0 && currentPct < 100 && stalledMs > 20_000) {
+        setShowUploadStalledModal(true);
+      }
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [isSubmitting, showUploadStalledModal]);
 
   const maxMainFileMb = Math.floor(maxMainFileBytes / 1024 / 1024);
 
@@ -606,6 +637,7 @@ export function NewFilePage() {
     }
 
     try {
+      retryAfterAbortRef.current = false;
       trackEvent("upload_submit", {
         publication_mode: publicationMode,
         has_main_file: hasMainFile,
@@ -613,9 +645,25 @@ export function NewFilePage() {
       });
       setIsSubmitting(true);
       setProgress(0);
+      setShowUploadStalledModal(false);
+      uploadLastProgressAtRef.current = Date.now();
+      uploadLastPctRef.current = 0;
+      const uploadAbortController = new AbortController();
+      uploadAbortRef.current = uploadAbortController;
       const response = await apiPostFormWithProgress<{
         item?: { id?: string; slug?: string; status?: string; is_public?: boolean };
-      }>("/files", data, (pct) => setProgress(pct));
+      }>(
+        "/files",
+        data,
+        (pct) => {
+          if (pct !== uploadLastPctRef.current) {
+            uploadLastPctRef.current = pct;
+            uploadLastProgressAtRef.current = Date.now();
+          }
+          setProgress(pct);
+        },
+        uploadAbortController.signal
+      );
       setProgress(100);
       setStatus(t.uploadQueued);
       const uploadedItem = response?.item;
@@ -657,12 +705,26 @@ export function NewFilePage() {
       if (coverPreviewUrl) URL.revokeObjectURL(coverPreviewUrl);
       setCoverPreviewUrl("");
     } catch (error) {
-      trackEvent("upload_error", {
-        publication_mode: publicationMode
-      });
-      setError((error as Error).message);
+      const message = (error as Error).message;
+      if (message === "Upload aborted.") {
+        trackEvent("upload_cancelled", { publication_mode: publicationMode });
+        setError("");
+        setStatus(ux.uploadCancelled);
+      } else {
+        trackEvent("upload_error", {
+          publication_mode: publicationMode
+        });
+        setError(message);
+      }
     } finally {
+      const shouldRetry = retryAfterAbortRef.current;
+      retryAfterAbortRef.current = false;
+      setShowUploadStalledModal(false);
+      uploadAbortRef.current = null;
       setIsSubmitting(false);
+      if (shouldRetry && formRef.current) {
+        window.setTimeout(() => formRef.current?.requestSubmit(), 80);
+      }
     }
   }
 
@@ -1221,6 +1283,18 @@ export function NewFilePage() {
                 {progress}% {t.uploadProgressPercent}
               </strong>
             </div>
+            <div className="upload-progress-actions">
+              <button
+                type="button"
+                className="ghost-btn upload-progress-cancel-btn"
+                onClick={() => {
+                  retryAfterAbortRef.current = false;
+                  uploadAbortRef.current?.abort();
+                }}
+              >
+                {ux.uploadCancelBtn}
+              </button>
+            </div>
             <progress className="upload-progress" value={progress} max={100} />
           </div>
         )}
@@ -1260,6 +1334,37 @@ export function NewFilePage() {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+      {showUploadStalledModal && (
+        <div className="success-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="upload-stalled-title">
+          <div className="success-modal-card upload-stalled-modal">
+            <h3 id="upload-stalled-title">{ux.uploadStalledTitle}</h3>
+            <p>{ux.uploadStalledBody}</p>
+            <div className="success-modal-actions">
+              <button
+                type="button"
+                className="ghost-btn"
+                onClick={() => {
+                  retryAfterAbortRef.current = false;
+                  setShowUploadStalledModal(false);
+                  uploadAbortRef.current?.abort();
+                }}
+              >
+                {ux.uploadStalledCancel}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  retryAfterAbortRef.current = true;
+                  setShowUploadStalledModal(false);
+                  uploadAbortRef.current?.abort();
+                }}
+              >
+                {ux.uploadStalledRetry}
+              </button>
+            </div>
           </div>
         </div>
       )}

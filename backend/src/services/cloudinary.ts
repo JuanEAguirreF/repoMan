@@ -1,6 +1,7 @@
 import sharp from "sharp";
 import { v2 as cloudinary } from "cloudinary";
 import { env } from "../config/env.js";
+import { setTimeout as sleepTimeout } from "node:timers/promises";
 
 cloudinary.config({
   cloud_name: env.CLOUDINARY_CLOUD_NAME,
@@ -42,8 +43,15 @@ export async function uploadCoverToCloudinary(input: {
   fileIdHint: string;
 }): Promise<{ url: string; bytes: number }> {
   const optimized = await optimizeCoverToAvif(input.fileBuffer);
-
   const uploadResult = await new Promise<{ secure_url: string }>((resolve, reject) => {
+    let settled = false;
+    const timeoutMs = 60_000;
+    const timeoutSignal = sleepTimeout(timeoutMs).then(() => {
+      if (settled) return;
+      settled = true;
+      reject(new Error("Cloudinary upload timed out"));
+    });
+
     const stream = cloudinary.uploader.upload_stream(
       {
         folder: env.CLOUDINARY_FOLDER,
@@ -53,6 +61,9 @@ export async function uploadCoverToCloudinary(input: {
         overwrite: true
       },
       (error, result) => {
+        if (settled) return;
+        settled = true;
+        void timeoutSignal;
         if (error || !result) {
           reject(error ?? new Error("Cloudinary upload failed"));
           return;
@@ -61,7 +72,19 @@ export async function uploadCoverToCloudinary(input: {
       }
     );
 
-    stream.end(optimized);
+    stream.on("error", (error) => {
+      if (settled) return;
+      settled = true;
+      reject(error);
+    });
+
+    try {
+      stream.end(optimized);
+    } catch (error) {
+      if (settled) return;
+      settled = true;
+      reject(error as Error);
+    }
   });
 
   return { url: uploadResult.secure_url, bytes: optimized.length };
