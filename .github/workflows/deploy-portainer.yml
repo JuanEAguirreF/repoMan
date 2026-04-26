@@ -69,6 +69,7 @@ jobs:
             VITE_SISTER_PLATFORM_URL=${{ secrets.VITE_SISTER_PLATFORM_URL }}
             VITE_DISCORD_IMAGE_URL=${{ secrets.VITE_DISCORD_IMAGE_URL }}
             VITE_DISCORD_INVITE_URL=${{ secrets.VITE_DISCORD_INVITE_URL }}
+            VITE_GA_MEASUREMENT_ID=${{ secrets.VITE_GA_MEASUREMENT_ID }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
