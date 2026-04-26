@@ -47,6 +47,20 @@ function sessionFilePath(uploadId: string) {
 }
 
 async function readRequestBodyToBuffer(request: any, maxBytes: number): Promise<Buffer<ArrayBufferLike>> {
+  if (Buffer.isBuffer(request.body)) {
+    if (request.body.length > maxBytes) {
+      throw new Error(`Chunk exceeded ${Math.floor(maxBytes / 1024 / 1024)} MB`);
+    }
+    return request.body;
+  }
+  if (request.body instanceof Uint8Array) {
+    const bodyBuffer = Buffer.from(request.body);
+    if (bodyBuffer.length > maxBytes) {
+      throw new Error(`Chunk exceeded ${Math.floor(maxBytes / 1024 / 1024)} MB`);
+    }
+    return bodyBuffer;
+  }
+
   const chunks: Buffer<ArrayBufferLike>[] = [];
   let size = 0;
   for await (const chunk of request.raw) {

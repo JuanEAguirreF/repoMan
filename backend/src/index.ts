@@ -28,7 +28,12 @@ function ratePlanForRequest(method: string, url: string) {
 
 async function buildServer() {
   const app = Fastify({
-    logger: true
+    logger: true,
+    bodyLimit: 12 * 1024 * 1024
+  });
+
+  app.addContentTypeParser(/^application\/octet-stream(?:;.*)?$/i, { parseAs: "buffer" }, (_request, body, done) => {
+    done(null, body);
   });
 
   app.addHook("onRequest", async (request, reply) => {
@@ -66,7 +71,9 @@ async function buildServer() {
       
       cb(new Error("Not allowed by CORS"), false);
     },
-    credentials: true
+    credentials: true,
+    methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"]
   });
   await app.register(multipart, {
     limits: {
