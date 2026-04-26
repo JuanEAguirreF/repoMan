@@ -48,7 +48,9 @@ export function initAnalytics() {
 }
 
 export function trackPageView(path: string) {
-  if (!isAnalyticsEnabled() || typeof window.gtag !== "function") return;
+  if (!isAnalyticsEnabled()) return;
+  if (!initialized) initAnalytics();
+  if (typeof window.gtag !== "function") return;
   window.gtag("event", "page_view", {
     page_path: path,
     page_location: window.location.href,
@@ -57,7 +59,8 @@ export function trackPageView(path: string) {
 }
 
 export function trackEvent(eventName: string, params?: AnalyticsEventParams) {
-  if (!isAnalyticsEnabled() || typeof window.gtag !== "function") return;
+  if (!isAnalyticsEnabled()) return;
+  if (!initialized) initAnalytics();
+  if (typeof window.gtag !== "function") return;
   window.gtag("event", eventName, params ?? {});
 }
-
