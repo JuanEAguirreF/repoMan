@@ -99,52 +99,53 @@ export function AppShell() {
                 <span className="nav-glyph" aria-hidden="true">✦</span>
                 <span>{t.navNewFile}</span>
               </Link>
-              {me.role === "super_admin" ? (
-                <div className="nav-account" ref={accountMenuRef}>
-                  <button
-                    className={`chip-btn nav-account-trigger ${accountOpen ? "is-open" : ""}`}
-                    onClick={() => setAccountOpen((prev) => !prev)}
-                    aria-expanded={accountOpen}
-                    aria-haspopup="menu"
-                  >
-                    <span className="nav-glyph" aria-hidden="true">⌬</span>
-                    <span>{t.navMyAccount}</span>
-                  </button>
-                  {accountOpen && (
-                    <div className="nav-account-menu" role="menu">
-                      <Link className="nav-account-item" to="/dashboard/admin/publications" onClick={() => setAccountOpen(false)}>
-                        <span className="nav-glyph" aria-hidden="true">⍟</span>
-                        {t.navAdminPublications}
-                      </Link>
-                      <Link className="nav-account-item" to="/dashboard/admin/deletions" onClick={() => setAccountOpen(false)}>
-                        <span className="nav-glyph" aria-hidden="true">⌫</span>
-                        {t.navAdminRequests}
-                      </Link>
-                      <Link className="nav-account-item" to="/dashboard/admin/edits" onClick={() => setAccountOpen(false)}>
-                        <span className="nav-glyph" aria-hidden="true">⌥</span>
-                        {t.navAdminEdits}
-                      </Link>
-                      <Link className="nav-account-item" to="/dashboard/admin/audit" onClick={() => setAccountOpen(false)}>
-                        <span className="nav-glyph" aria-hidden="true">◇</span>
-                        {t.navAdminAudit}
-                      </Link>
-                      <Link className="nav-account-item" to="/dashboard/admin/files" onClick={() => setAccountOpen(false)}>
-                        <span className="nav-glyph" aria-hidden="true">◉</span>
-                        {t.navAllFiles}
-                      </Link>
-                      <button className="nav-account-item nav-account-logout" onClick={logout}>
-                        <span className="nav-glyph" aria-hidden="true">⊖</span>
-                        {t.navLogout}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <button className="chip-btn" onClick={logout}>
-                  <span className="nav-glyph" aria-hidden="true">⊖</span>
-                  <span>{t.navLogout}</span>
+              <div className="nav-account" ref={accountMenuRef}>
+                <button
+                  className={`chip-btn nav-account-trigger ${accountOpen ? "is-open" : ""}`}
+                  onClick={() => setAccountOpen((prev) => !prev)}
+                  aria-expanded={accountOpen}
+                  aria-haspopup="menu"
+                >
+                  <span className="nav-glyph" aria-hidden="true">⌬</span>
+                  <span>{t.navMyAccount}</span>
                 </button>
-              )}
+                {accountOpen && (
+                  <div className="nav-account-menu" role="menu">
+                    <Link className="nav-account-item" to="/dashboard/profile" onClick={() => setAccountOpen(false)}>
+                      <span className="nav-glyph" aria-hidden="true">◍</span>
+                      {t.navMyProfile}
+                    </Link>
+                    {me.role === "super_admin" && (
+                      <>
+                        <Link className="nav-account-item" to="/dashboard/admin/publications" onClick={() => setAccountOpen(false)}>
+                          <span className="nav-glyph" aria-hidden="true">⍟</span>
+                          {t.navAdminPublications}
+                        </Link>
+                        <Link className="nav-account-item" to="/dashboard/admin/deletions" onClick={() => setAccountOpen(false)}>
+                          <span className="nav-glyph" aria-hidden="true">⌫</span>
+                          {t.navAdminRequests}
+                        </Link>
+                        <Link className="nav-account-item" to="/dashboard/admin/edits" onClick={() => setAccountOpen(false)}>
+                          <span className="nav-glyph" aria-hidden="true">⌥</span>
+                          {t.navAdminEdits}
+                        </Link>
+                        <Link className="nav-account-item" to="/dashboard/admin/audit" onClick={() => setAccountOpen(false)}>
+                          <span className="nav-glyph" aria-hidden="true">◇</span>
+                          {t.navAdminAudit}
+                        </Link>
+                        <Link className="nav-account-item" to="/dashboard/admin/files" onClick={() => setAccountOpen(false)}>
+                          <span className="nav-glyph" aria-hidden="true">◉</span>
+                          {t.navAllFiles}
+                        </Link>
+                      </>
+                    )}
+                    <button className="nav-account-item nav-account-logout" onClick={logout}>
+                      <span className="nav-glyph" aria-hidden="true">⊖</span>
+                      {t.navLogout}
+                    </button>
+                  </div>
+                )}
+              </div>
             </>
           ) : (
             <>

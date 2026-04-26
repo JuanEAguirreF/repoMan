@@ -24,5 +24,11 @@ export type CatalogFile = {
   cover_image_path: string;
   created_at: string;
   published_at: string;
+  owner_user_id?: string;
+  uploader?: {
+    profileId: string;
+    displayName: string;
+    avatarUrl: string | null;
+  } | null;
   status: "active" | "pending_review" | "rejected_review" | "pending_deletion" | "deleted";
 };

@@ -30,6 +30,7 @@ export function PublicFileDetailPage() {
   const { t, locale } = useI18n();
   const discordInviteUrl =
     ((import.meta.env.VITE_DISCORD_INVITE_URL as string | undefined)?.trim() || "https://discord.gg/jURmbDXjnf");
+  const headerImageUrl = (import.meta.env.VITE_HEADER_IMAGE_URL as string | undefined)?.trim() || "";
   const siteUrl = ((import.meta.env.VITE_SITE_URL as string | undefined)?.trim().replace(/\/$/, "") ||
     "https://repoman.comunidaddelmanga.com");
 
@@ -148,6 +149,20 @@ export function PublicFileDetailPage() {
           <img src={resolveCoverUrl(currentItem.id, currentItem.cover_image_path)} alt={currentItem.title} />
         </div>
         <div className="detail-side">
+          {currentItem.uploader?.profileId && (
+            <div className="detail-uploader-inline">
+              <Link to={`/profiles/${currentItem.uploader.profileId}`} className="detail-uploader-link">
+                <img
+                  className="detail-uploader-avatar"
+                  src={currentItem.uploader.avatarUrl || headerImageUrl}
+                  alt={currentItem.uploader.displayName}
+                />
+              </Link>
+              <Link to={`/profiles/${currentItem.uploader.profileId}`} className="detail-uploader-name">
+                {currentItem.uploader.displayName}
+              </Link>
+            </div>
+          )}
           <p>{currentItem.description}</p>
           <dl className="detail-meta">
             {!!currentItem.alternate_name?.trim() && (

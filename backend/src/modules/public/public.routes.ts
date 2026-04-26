@@ -5,7 +5,9 @@ import { z } from "zod";
 import { env } from "../../config/env.js";
 import { safeJoin } from "../../utils/filename.js";
 import { getPublicCatalog, getPublicCatalogDetail, getPublicCatalogForSitemap } from "../files/files.service.js";
+import { listPublicFilesByOwner } from "../files/files.repository.js";
 import { getCached, setCached } from "./public.cache.js";
+import { buildAvatarPublicUrl, findAvatar } from "../users/avatar.storage.js";
 
 function escapeXml(value: string): string {
   return value
@@ -147,8 +149,82 @@ export const publicRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.send({ item: hit, cached: true });
     }
 
-    const item = await getPublicCatalogDetail(fastify, id);
+    const item = await getPublicCatalogDetail(fastify, id) as (Record<string, unknown> & {
+      owner_user_id?: string | null;
+    }) | null;
     if (!item) return reply.code(404).send({ error: "Not found" });
+    if (item.owner_user_id) {
+      const { data: profile } = await fastify.supabaseAdmin
+        .from("users_profiles")
+        .select("id,display_name")
+        .eq("id", item.owner_user_id)
+        .maybeSingle();
+      const avatar = await findAvatar(item.owner_user_id).catch(() => null);
+      item.uploader = profile
+        ? {
+            profileId: profile.id,
+            displayName: profile.display_name || "RepoMan",
+            avatarUrl: avatar ? buildAvatarPublicUrl(profile.id, avatar.mtimeMs) : null
+          }
+        : null;
+    } else {
+      item.uploader = null;
+    }
+    setCached(cacheKey, item);
+    reply.header("Cache-Control", "public, max-age=60");
+    return reply.send({ item, cached: false });
+  });
+
+  fastify.get("/profiles/:profileId", async (request, reply) => {
+    const profileId = (request.params as { profileId: string }).profileId;
+    const parsed = z
+      .object({
+        page: z.coerce.number().int().min(1).optional(),
+        pageSize: z.coerce.number().int().min(1).max(60).optional(),
+        category: z.string().max(80).optional(),
+        state: z.enum(["all", "preserved", "request_only"]).optional()
+      })
+      .safeParse(request.query ?? {});
+    if (!parsed.success) {
+      return reply.code(400).send({ error: "Invalid query parameters" });
+    }
+    const page = parsed.data.page ?? 1;
+    const pageSize = parsed.data.pageSize ?? 12;
+    const category = (parsed.data.category ?? "").trim();
+    const state = parsed.data.state ?? "all";
+
+    const cacheKey = `public:profile:${profileId}:${page}:${pageSize}:${category.toLowerCase()}:${state}`;
+    const hit = getCached<Record<string, unknown>>(cacheKey);
+    if (hit) {
+      reply.header("Cache-Control", "public, max-age=60");
+      return reply.send({ item: hit, cached: true });
+    }
+
+    const { data: profile, error } = await fastify.supabaseAdmin
+      .from("users_profiles")
+      .select("id,display_name,role,created_at")
+      .eq("id", profileId)
+      .maybeSingle();
+    if (error || !profile) return reply.code(404).send({ error: "Not found" });
+
+    const filesPage = await listPublicFilesByOwner(fastify, profileId, { page, pageSize, category, state });
+    const avatar = await findAvatar(profileId).catch(() => null);
+
+    const item = {
+      profileId: profile.id,
+      displayName: profile.display_name || "RepoMan",
+      role: profile.role,
+      createdAt: profile.created_at,
+      avatarUrl: avatar ? buildAvatarPublicUrl(profile.id, avatar.mtimeMs) : null,
+      files: filesPage.items,
+      page: filesPage.page,
+      pageSize: filesPage.pageSize,
+      total: filesPage.total,
+      filters: {
+        category,
+        state
+      }
+    };
     setCached(cacheKey, item);
     reply.header("Cache-Control", "public, max-age=60");
     return reply.send({ item, cached: false });

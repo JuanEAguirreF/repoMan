@@ -4,6 +4,7 @@ import { AppShell } from "./components/AppShell";
 import { LoginPage } from "./routes/LoginPage";
 import { PublicCatalogPage } from "./routes/PublicCatalogPage";
 import { PublicFileDetailPage } from "./routes/PublicFileDetailPage";
+import { PublicProfilePage } from "./routes/PublicProfilePage";
 import { AboutRepoManPage } from "./routes/AboutRepoManPage";
 import { FaqPage } from "./routes/FaqPage";
 import { RequireAuth } from "./routes/RequireAuth";
@@ -15,6 +16,7 @@ import { AdminFilesPage } from "./routes/dashboard/AdminFilesPage";
 import { AdminPublicationRequestsPage } from "./routes/dashboard/AdminPublicationRequestsPage";
 import { AdminEditRequestsPage } from "./routes/dashboard/AdminEditRequestsPage";
 import { AdminAuditLogsPage } from "./routes/dashboard/AdminAuditLogsPage";
+import { MyProfilePage } from "./routes/dashboard/MyProfilePage";
 import { trackPageView } from "./lib/analytics";
 
 function RouteAnalytics() {
@@ -41,9 +43,11 @@ export function App() {
           <Route path="/que-es-repoman" element={<AboutRepoManPage />} />
           <Route path="/faq" element={<FaqPage />} />
           <Route path="/files/:slug" element={<PublicFileDetailPage />} />
+          <Route path="/profiles/:profileId" element={<PublicProfilePage />} />
           <Route path="/login" element={<LoginPage />} />
 
           <Route element={<RequireAuth />}>
+            <Route path="/dashboard/profile" element={<MyProfilePage />} />
             <Route path="/dashboard/files" element={<MyFilesPage />} />
             <Route path="/dashboard/new" element={<NewFilePage />} />
 

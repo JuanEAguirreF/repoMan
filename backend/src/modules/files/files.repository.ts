@@ -12,7 +12,7 @@ export async function createFileRecord(
 }
 
 export async function listFilesByOwner(fastify: FastifyInstance, ownerUserId: string) {
-  const { data, error } = await fastify.supabaseAdmin
+  const { data, error, count } = await fastify.supabaseAdmin
     .from("files")
     .select("id,title,alternate_name,author,artist,slug,description,category,content_origin,mime_type,file_size_bytes,status,created_at,cover_image_path,has_backup")
     .eq("owner_user_id", ownerUserId)
@@ -82,7 +82,7 @@ export async function updateFileMetadata(
 }
 
 export async function listPendingPublicationFiles(fastify: FastifyInstance) {
-  const { data, error } = await fastify.supabaseAdmin
+  const { data, error, count } = await fastify.supabaseAdmin
     .from("files")
     .select("id,title,slug,category,status,owner_user_id,created_at,published_at,cover_image_path,mime_type,file_size_bytes,original_filename,has_backup")
     .eq("status", "pending_review")
@@ -104,7 +104,7 @@ export async function listPublicFiles(
   let queryBuilder = fastify.supabaseAdmin
     .from("files")
     .select(
-      "id,title,alternate_name,author,artist,slug,description,category,content_origin,tags,mime_type,file_size_bytes,created_at,published_at,cover_image_path,status,is_public,has_backup",
+      "id,title,alternate_name,author,artist,slug,description,category,content_origin,tags,mime_type,file_size_bytes,created_at,published_at,cover_image_path,status,is_public,has_backup,owner_user_id",
       { count: "exact" }
     )
     .eq("status", "active")
@@ -121,6 +121,46 @@ export async function listPublicFiles(
   const { data, error, count } = await queryBuilder.range(from, to);
   if (error) throw error;
 
+  return {
+    items: data ?? [],
+    total: count ?? 0,
+    page,
+    pageSize
+  };
+}
+
+export async function listPublicFilesByOwner(
+  fastify: FastifyInstance,
+  ownerUserId: string,
+  params?: { page?: number; pageSize?: number; category?: string; state?: "all" | "preserved" | "request_only" }
+) {
+  const page = Math.max(1, Math.floor(params?.page ?? 1));
+  const pageSize = Math.min(60, Math.max(1, Math.floor(params?.pageSize ?? 12)));
+  const category = (params?.category ?? "").trim();
+  const state = params?.state ?? "all";
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+  let queryBuilder = fastify.supabaseAdmin
+    .from("files")
+    .select(
+      "id,title,alternate_name,author,artist,slug,description,category,content_origin,tags,mime_type,file_size_bytes,created_at,published_at,cover_image_path,status,is_public,has_backup",
+      { count: "exact" }
+    )
+    .eq("status", "active")
+    .eq("is_public", true)
+    .eq("owner_user_id", ownerUserId)
+    .order("published_at", { ascending: false });
+  if (category.length > 0) {
+    queryBuilder = queryBuilder.eq("category", category);
+  }
+  if (state === "preserved") {
+    queryBuilder = queryBuilder.eq("has_backup", true);
+  } else if (state === "request_only") {
+    queryBuilder = queryBuilder.eq("has_backup", false);
+  }
+
+  const { data, error, count } = await queryBuilder.range(from, to);
+  if (error) throw error;
   return {
     items: data ?? [],
     total: count ?? 0,
@@ -146,7 +186,7 @@ export async function listAllPublicFilesForSitemap(fastify: FastifyInstance) {
 
 export async function getPublicFileById(fastify: FastifyInstance, fileId: string) {
   const selectClause =
-    "id,title,alternate_name,author,artist,slug,description,category,content_origin,tags,mime_type,file_size_bytes,created_at,published_at,cover_image_path,status,is_public,has_backup";
+    "id,title,alternate_name,author,artist,slug,description,category,content_origin,tags,mime_type,file_size_bytes,created_at,published_at,cover_image_path,status,is_public,has_backup,owner_user_id";
   const query = fastify.supabaseAdmin
     .from("files")
     .select(selectClause)

@@ -10,6 +10,9 @@ import { publicRoutes } from "./modules/public/public.routes.js";
 import { deletionRoutes } from "./modules/deletion/deletion.routes.js";
 import { adminRoutes } from "./modules/admin/admin.routes.js";
 import { editRoutes } from "./modules/edit/edit.routes.js";
+import { usersRoutes } from "./modules/users/users.routes.js";
+import { usersPublicRoutes } from "./modules/users/users.public.routes.js";
+import { ensureAvatarDir } from "./modules/users/avatar.storage.js";
 
 type Bucket = { resetAt: number; count: number };
 const ipBuckets = new Map<string, Bucket>();
@@ -84,6 +87,7 @@ async function buildServer() {
   await app.register(supabasePlugin);
 
   await ensureStorageDirs(env.STORAGE_ROOT);
+  await ensureAvatarDir();
 
   app.get("/health", async () => ({ ok: true }));
 
@@ -93,6 +97,8 @@ async function buildServer() {
   await app.register(editRoutes, { prefix: "/api" });
   await app.register(adminRoutes, { prefix: "/api/admin" });
   await app.register(publicRoutes, { prefix: "/api/public" });
+  await app.register(usersRoutes, { prefix: "/api/users" });
+  await app.register(usersPublicRoutes, { prefix: "/api/public" });
 
   // Fallback map for paths without /api
   await app.register(authRoutes, { prefix: "/auth" });
@@ -101,6 +107,8 @@ async function buildServer() {
   await app.register(editRoutes);
   await app.register(adminRoutes, { prefix: "/admin" });
   await app.register(publicRoutes, { prefix: "/public" });
+  await app.register(usersRoutes, { prefix: "/users" });
+  await app.register(usersPublicRoutes, { prefix: "/public" });
 
   return app;
 }
