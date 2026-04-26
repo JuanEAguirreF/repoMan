@@ -1470,6 +1470,109 @@ a {
   font-size: 0.78rem;
 }
 
+.optional-fields-toggle {
+  width: fit-content;
+  justify-self: start;
+  margin-top: 4px;
+}
+
+.optional-fields-panel {
+  border: 1px solid rgba(200, 161, 106, 0.26);
+  border-radius: 12px;
+  background: rgba(16, 23, 34, 0.66);
+  padding: 10px;
+  display: grid;
+  gap: 10px;
+}
+
+.optional-fields-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.optional-fields-actions label {
+  grid-column: 1 / -1;
+  margin-bottom: -2px;
+}
+
+.optional-field-item {
+  border: 1px solid rgba(200, 161, 106, 0.2);
+  border-radius: 10px;
+  background: rgba(31, 43, 58, 0.42);
+  padding: 10px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.optional-field-item label,
+.optional-field-item > input {
+  grid-column: 1 / -1;
+}
+
+.optional-metadata-builder {
+  grid-template-columns: 1fr;
+  align-items: stretch;
+}
+
+.optional-metadata-builder > .chip-btn {
+  width: fit-content;
+  justify-self: start;
+}
+
+.metadata-pairs-list {
+  display: grid;
+  gap: 8px;
+}
+
+.metadata-preset-panel {
+  border: 1px dashed rgba(200, 161, 106, 0.24);
+  border-radius: 9px;
+  padding: 8px;
+  background: rgba(17, 24, 34, 0.45);
+}
+
+.metadata-preset-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.metadata-preset-btn,
+.metadata-preset-all-btn {
+  padding: 6px 10px;
+  font-size: 0.76rem;
+}
+
+.metadata-preset-all-btn {
+  border-color: #8f6a3f;
+  color: #f0d5ac;
+}
+
+.metadata-pair-row {
+  border: 1px dashed rgba(200, 161, 106, 0.28);
+  border-radius: 9px;
+  padding: 8px;
+  display: grid;
+  grid-template-columns: 1fr 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.metadata-pair-order {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.metadata-order-btn {
+  min-width: 60px;
+  padding: 6px 9px;
+  font-size: 0.75rem;
+}
+
 .file-input-native {
   position: absolute;
   width: 1px !important;
@@ -2311,6 +2414,22 @@ a {
   .upload-fieldset textarea {
     min-height: 38px;
     font-size: 0.9rem;
+  }
+
+  .optional-fields-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .optional-field-item {
+    grid-template-columns: 1fr;
+  }
+
+  .metadata-pair-row {
+    grid-template-columns: 1fr;
+  }
+
+  .metadata-pair-order {
+    justify-content: flex-start;
   }
 
   .upload-actions {

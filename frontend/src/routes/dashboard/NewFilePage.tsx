@@ -38,9 +38,34 @@ function getExtension(name: string): string {
 
 type PublicationMode = "preserve" | "request_backup";
 type ContentOrigin = "manga" | "manhwa" | "manhua";
+type OptionalFieldKey = "alternateName" | "author" | "artist" | "tags";
 type ArchiveEntry = { name: string; encrypted: boolean };
 type ArchiveValidationProgress = { pct: number; phase: string };
 type SelectedFileMeta = { name: string; size: number; ext: string; mime: string };
+type MetadataPair = { id: string; key: string; value: string };
+type MetadataPreset = { key: string; value: string };
+
+function createClientId(): string {
+  return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+const METADATA_PRESETS_BY_ORIGIN: Record<ContentOrigin, MetadataPreset[]> = {
+  manga: [
+    { key: "origin_country", value: "Japan" },
+    { key: "reading_direction", value: "right_to_left" },
+    { key: "source_format", value: "tankobon" }
+  ],
+  manhwa: [
+    { key: "origin_country", value: "South Korea" },
+    { key: "reading_direction", value: "left_to_right" },
+    { key: "source_format", value: "webtoon" }
+  ],
+  manhua: [
+    { key: "origin_country", value: "China" },
+    { key: "reading_direction", value: "left_to_right" },
+    { key: "source_format", value: "manhua_serial" }
+  ]
+};
 
 function readU16LE(bytes: Uint8Array, offset: number): number {
   return bytes[offset] | (bytes[offset + 1] << 8);
@@ -239,8 +264,71 @@ export function NewFilePage() {
   const [lastUploadedSlug, setLastUploadedSlug] = useState<string>("");
   const [canViewUploadedItem, setCanViewUploadedItem] = useState(false);
   const [maxMainFileBytes, setMaxMainFileBytes] = useState<number>(DEFAULT_MAX_MAIN_FILE_BYTES);
+  const [showOptionalFields, setShowOptionalFields] = useState(false);
+  const [enabledOptionalFields, setEnabledOptionalFields] = useState<OptionalFieldKey[]>([]);
+  const [metadataPairs, setMetadataPairs] = useState<MetadataPair[]>([]);
+  const [optionalFieldToAdd, setOptionalFieldToAdd] = useState<OptionalFieldKey | "">("");
+  const [contentOriginValue, setContentOriginValue] = useState<ContentOrigin>("manga");
   const { t, locale } = useI18n();
   const discordInviteUrl = ((import.meta.env.VITE_DISCORD_INVITE_URL as string | undefined)?.trim() || "https://discord.gg/jURmbDXjnf");
+  const ux = useMemo(
+    () =>
+      locale === "es"
+        ? {
+            optionalToggleShow: "Mostrar campos opcionales",
+            optionalToggleHide: "Ocultar campos opcionales",
+            optionalLead: "Agrega solo los campos opcionales que necesites.",
+            addFieldLabel: "Agregar campo",
+            addFieldBtn: "Agregar",
+            removeFieldBtn: "Quitar",
+            extraMetaLead: "Metadatos extra (campo y valor)",
+            extraMetaAddRow: "Agregar metadato",
+            extraMetaKey: "Campo",
+            extraMetaValue: "Valor",
+            extraMetaKeyPlaceholder: "ej: language",
+            extraMetaValuePlaceholder: "ej: es",
+            extraMetaRemove: "Quitar",
+            extraMetaInvalidKey: "En metadatos extra no se permiten claves vacías.",
+            extraMetaDuplicateKey: "Hay claves repetidas en metadatos extra.",
+            extraMetaPresetLead: "Sugerencias rápidas según tipo de obra",
+            extraMetaPresetAll: "Agregar sugerencias",
+            extraMetaMoveUp: "Subir",
+            extraMetaMoveDown: "Bajar"
+          }
+        : {
+            optionalToggleShow: "Show optional fields",
+            optionalToggleHide: "Hide optional fields",
+            optionalLead: "Add only the optional fields you need.",
+            addFieldLabel: "Add field",
+            addFieldBtn: "Add",
+            removeFieldBtn: "Remove",
+            extraMetaLead: "Extra metadata (field and value)",
+            extraMetaAddRow: "Add metadata",
+            extraMetaKey: "Field",
+            extraMetaValue: "Value",
+            extraMetaKeyPlaceholder: "e.g. language",
+            extraMetaValuePlaceholder: "e.g. en",
+            extraMetaRemove: "Remove",
+            extraMetaInvalidKey: "Extra metadata contains an empty key.",
+            extraMetaDuplicateKey: "Extra metadata contains duplicate keys.",
+            extraMetaPresetLead: "Quick suggestions by content type",
+            extraMetaPresetAll: "Add suggestions",
+            extraMetaMoveUp: "Up",
+            extraMetaMoveDown: "Down"
+          },
+    [locale]
+  );
+  const metadataPresetSuggestions = useMemo(() => METADATA_PRESETS_BY_ORIGIN[contentOriginValue], [contentOriginValue]);
+  const optionalFieldOptions = useMemo(
+    () =>
+      [
+        { key: "alternateName" as const, label: t.fieldAlternateName },
+        { key: "author" as const, label: t.fieldAuthor },
+        { key: "artist" as const, label: t.fieldArtist },
+        { key: "tags" as const, label: t.fieldTags }
+      ].filter((opt) => !enabledOptionalFields.includes(opt.key)),
+    [enabledOptionalFields, t.fieldAlternateName, t.fieldAuthor, t.fieldArtist, t.fieldTags]
+  );
 
   useSeo({
     title: t.newFileTitle,
@@ -411,10 +499,34 @@ export function NewFilePage() {
     const artist = String(data.get("artist") || "").trim();
     const description = String(data.get("description") || "").trim();
     const category = String(data.get("category") || "").trim();
-    const extraMetadata = String(data.get("extraMetadata") || "").trim();
-    const contentOrigin = String(data.get("contentOrigin") || "").trim() as ContentOrigin;
+    const contentOrigin = contentOriginValue;
     const mainFile = data.get("file");
     const coverImage = data.get("coverImage");
+    const builtExtraMetadata: Record<string, string> = {};
+    const usedMetadataKeys = new Set<string>();
+
+    for (const pair of metadataPairs) {
+      const key = pair.key.trim();
+      const value = pair.value.trim();
+      if (!key && !value) continue;
+      if (!key) {
+        setError(ux.extraMetaInvalidKey);
+        trackEvent("upload_validation_error", { reason: "extra_metadata_empty_key", publication_mode: publicationMode });
+        return;
+      }
+      if (usedMetadataKeys.has(key.toLowerCase())) {
+        setError(ux.extraMetaDuplicateKey);
+        trackEvent("upload_validation_error", { reason: "extra_metadata_duplicate_key", publication_mode: publicationMode });
+        return;
+      }
+      usedMetadataKeys.add(key.toLowerCase());
+      builtExtraMetadata[key] = value;
+    }
+    if (Object.keys(builtExtraMetadata).length > 0) {
+      data.set("extraMetadata", JSON.stringify(builtExtraMetadata));
+    } else {
+      data.delete("extraMetadata");
+    }
 
     try {
       if (!title) failValidation(t.validationTitleRequired, "title_required");
@@ -464,16 +576,6 @@ export function NewFilePage() {
       trackEvent("upload_validation_error", { reason: "cover_size_exceeded", publication_mode: publicationMode });
       return;
     }
-    if (extraMetadata) {
-      try {
-        JSON.parse(extraMetadata);
-      } catch {
-        setError(t.validationMetadataJson);
-        trackEvent("upload_validation_error", { reason: "extra_metadata_invalid_json", publication_mode: publicationMode });
-        return;
-      }
-    }
-
     if (hasMainFile && ARCHIVE_EXTENSIONS.has(mainExt) && validatedArchiveKey !== makeFileKey(mainFile)) {
       const isArchiveValid = await runArchiveValidationForSelectedFile(mainFile);
       if (!isArchiveValid) {
@@ -513,6 +615,7 @@ export function NewFilePage() {
       setLastUploadedSlug(viewAllowed ? uploadedItem?.slug ?? "" : "");
       setShowSuccessModal(true);
       form.reset();
+      setContentOriginValue("manga");
       setMainFileName("");
       setSelectedMainFile(null);
       setCoverFileName("");
@@ -528,6 +631,51 @@ export function NewFilePage() {
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  function addOrPatchMetadataPreset(preset: MetadataPreset) {
+    setMetadataPairs((prev) => {
+      const keyLc = preset.key.trim().toLowerCase();
+      const existingIdx = prev.findIndex((row) => row.key.trim().toLowerCase() === keyLc);
+      if (existingIdx >= 0) {
+        if (prev[existingIdx].value.trim().length > 0) return prev;
+        const next = [...prev];
+        next[existingIdx] = { ...next[existingIdx], value: preset.value };
+        return next;
+      }
+      return [...prev, { id: createClientId(), key: preset.key, value: preset.value }];
+    });
+  }
+
+  function moveMetadataRow(pairId: string, direction: "up" | "down") {
+    setMetadataPairs((prev) => {
+      const idx = prev.findIndex((row) => row.id === pairId);
+      if (idx < 0) return prev;
+      const targetIdx = direction === "up" ? idx - 1 : idx + 1;
+      if (targetIdx < 0 || targetIdx >= prev.length) return prev;
+      const next = [...prev];
+      const [item] = next.splice(idx, 1);
+      next.splice(targetIdx, 0, item);
+      return next;
+    });
+  }
+
+  function addAllMetadataPresets() {
+    setMetadataPairs((prev) => {
+      const next = [...prev];
+      for (const preset of metadataPresetSuggestions) {
+        const keyLc = preset.key.trim().toLowerCase();
+        const existingIdx = next.findIndex((row) => row.key.trim().toLowerCase() === keyLc);
+        if (existingIdx >= 0) {
+          if (next[existingIdx].value.trim().length === 0) {
+            next[existingIdx] = { ...next[existingIdx], value: preset.value };
+          }
+          continue;
+        }
+        next.push({ id: createClientId(), key: preset.key, value: preset.value });
+      }
+      return next;
+    });
   }
 
   return (
@@ -592,15 +740,6 @@ export function NewFilePage() {
             <label htmlFor="title">{t.fieldTitle}</label>
             <input id="title" name="title" required placeholder={t.placeholderTitle} />
 
-            <label htmlFor="alternateName">{t.fieldAlternateName}</label>
-            <input id="alternateName" name="alternateName" placeholder={t.placeholderAlternateName} />
-
-            <label htmlFor="author">{t.fieldAuthor}</label>
-            <input id="author" name="author" placeholder={t.placeholderAuthor} />
-
-            <label htmlFor="artist">{t.fieldArtist}</label>
-            <input id="artist" name="artist" placeholder={t.placeholderArtist} />
-
             <label htmlFor="description">{t.fieldDescription}</label>
             <textarea id="description" name="description" required placeholder={t.placeholderDescription} rows={4} />
 
@@ -620,19 +759,203 @@ export function NewFilePage() {
             </datalist>
 
             <label htmlFor="contentOrigin">{t.fieldContentOrigin}</label>
-            <select id="contentOrigin" name="contentOrigin" defaultValue="manga" required>
+            <select
+              id="contentOrigin"
+              name="contentOrigin"
+              value={contentOriginValue}
+              onChange={(e) => setContentOriginValue(e.target.value as ContentOrigin)}
+              required
+            >
               <option value="manga">{t.contentOriginManga}</option>
               <option value="manhwa">{t.contentOriginManhwa}</option>
               <option value="manhua">{t.contentOriginManhua}</option>
             </select>
 
-            <label htmlFor="tags">{t.fieldTags}</label>
-            <input id="tags" name="tags" placeholder={t.placeholderTags} />
-
             <input name="uploadDate" type="hidden" value={today} readOnly />
+            <button
+              type="button"
+              className="chip-btn optional-fields-toggle"
+              onClick={() => setShowOptionalFields((prev) => !prev)}
+            >
+              {showOptionalFields ? ux.optionalToggleHide : ux.optionalToggleShow}
+            </button>
+            {showOptionalFields && (
+              <div className="optional-fields-panel">
+                <p className="meta-line">{ux.optionalLead}</p>
+                <div className="optional-fields-actions">
+                  <label htmlFor="optionalFieldSelector">{ux.addFieldLabel}</label>
+                  <select
+                    id="optionalFieldSelector"
+                    value={optionalFieldToAdd}
+                    onChange={(e) => setOptionalFieldToAdd(e.target.value as OptionalFieldKey | "")}
+                  >
+                    <option value="" disabled>
+                      {ux.addFieldLabel}
+                    </option>
+                    {optionalFieldOptions.map((opt) => (
+                      <option key={opt.key} value={opt.key}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    className="chip-btn"
+                    onClick={() => {
+                      const selected = optionalFieldToAdd;
+                      if (!selected) return;
+                      if (!enabledOptionalFields.includes(selected)) {
+                        setEnabledOptionalFields((prev) => [...prev, selected]);
+                      }
+                      setOptionalFieldToAdd("");
+                    }}
+                    disabled={!optionalFieldToAdd || optionalFieldOptions.length === 0}
+                  >
+                    {ux.addFieldBtn}
+                  </button>
+                </div>
 
-            <label htmlFor="extraMetadata">{t.fieldExtraMetadata}</label>
-            <textarea id="extraMetadata" name="extraMetadata" placeholder={t.placeholderMetadata} rows={3} />
+                {enabledOptionalFields.includes("alternateName") && (
+                  <div className="optional-field-item">
+                    <label htmlFor="alternateName">{t.fieldAlternateName}</label>
+                    <input id="alternateName" name="alternateName" placeholder={t.placeholderAlternateName} />
+                    <button
+                      type="button"
+                      className="ghost-btn"
+                      onClick={() => setEnabledOptionalFields((prev) => prev.filter((f) => f !== "alternateName"))}
+                    >
+                      {ux.removeFieldBtn}
+                    </button>
+                  </div>
+                )}
+
+                {enabledOptionalFields.includes("author") && (
+                  <div className="optional-field-item">
+                    <label htmlFor="author">{t.fieldAuthor}</label>
+                    <input id="author" name="author" placeholder={t.placeholderAuthor} />
+                    <button
+                      type="button"
+                      className="ghost-btn"
+                      onClick={() => setEnabledOptionalFields((prev) => prev.filter((f) => f !== "author"))}
+                    >
+                      {ux.removeFieldBtn}
+                    </button>
+                  </div>
+                )}
+
+                {enabledOptionalFields.includes("artist") && (
+                  <div className="optional-field-item">
+                    <label htmlFor="artist">{t.fieldArtist}</label>
+                    <input id="artist" name="artist" placeholder={t.placeholderArtist} />
+                    <button
+                      type="button"
+                      className="ghost-btn"
+                      onClick={() => setEnabledOptionalFields((prev) => prev.filter((f) => f !== "artist"))}
+                    >
+                      {ux.removeFieldBtn}
+                    </button>
+                  </div>
+                )}
+
+                {enabledOptionalFields.includes("tags") && (
+                  <div className="optional-field-item">
+                    <label htmlFor="tags">{t.fieldTags}</label>
+                    <input id="tags" name="tags" placeholder={t.placeholderTags} />
+                    <button
+                      type="button"
+                      className="ghost-btn"
+                      onClick={() => setEnabledOptionalFields((prev) => prev.filter((f) => f !== "tags"))}
+                    >
+                      {ux.removeFieldBtn}
+                    </button>
+                  </div>
+                )}
+
+                <div className="optional-field-item optional-metadata-builder">
+                  <label>{ux.extraMetaLead}</label>
+                  <div className="metadata-preset-panel">
+                    <p className="meta-line">{ux.extraMetaPresetLead}</p>
+                    <div className="metadata-preset-actions">
+                      {metadataPresetSuggestions.map((preset) => (
+                        <button
+                          key={`${preset.key}:${preset.value}`}
+                          type="button"
+                          className="chip-btn metadata-preset-btn"
+                          onClick={() => addOrPatchMetadataPreset(preset)}
+                        >
+                          {preset.key}: {preset.value}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        className="chip-btn metadata-preset-all-btn"
+                        onClick={addAllMetadataPresets}
+                      >
+                        {ux.extraMetaPresetAll}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="metadata-pairs-list">
+                    {metadataPairs.map((pair, idx) => (
+                      <div key={pair.id} className="metadata-pair-row">
+                        <input
+                          placeholder={ux.extraMetaKeyPlaceholder}
+                          value={pair.key}
+                          onChange={(e) =>
+                            setMetadataPairs((prev) =>
+                              prev.map((row) => (row.id === pair.id ? { ...row, key: e.target.value } : row))
+                            )
+                          }
+                        />
+                        <input
+                          placeholder={ux.extraMetaValuePlaceholder}
+                          value={pair.value}
+                          onChange={(e) =>
+                            setMetadataPairs((prev) =>
+                              prev.map((row) => (row.id === pair.id ? { ...row, value: e.target.value } : row))
+                            )
+                          }
+                        />
+                        <button
+                          type="button"
+                          className="ghost-btn"
+                          onClick={() => setMetadataPairs((prev) => prev.filter((row) => row.id !== pair.id))}
+                        >
+                          {ux.extraMetaRemove}
+                        </button>
+                        <div className="metadata-pair-order">
+                          <button
+                            type="button"
+                            className="ghost-btn metadata-order-btn"
+                            onClick={() => moveMetadataRow(pair.id, "up")}
+                            disabled={idx === 0}
+                          >
+                            {ux.extraMetaMoveUp}
+                          </button>
+                          <button
+                            type="button"
+                            className="ghost-btn metadata-order-btn"
+                            onClick={() => moveMetadataRow(pair.id, "down")}
+                            disabled={idx === metadataPairs.length - 1}
+                          >
+                            {ux.extraMetaMoveDown}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    className="chip-btn"
+                    onClick={() =>
+                      setMetadataPairs((prev) => [...prev, { id: createClientId(), key: "", value: "" }])
+                    }
+                  >
+                    {ux.extraMetaAddRow}
+                  </button>
+                </div>
+              </div>
+            )}
           </fieldset>
 
           <fieldset className="upload-fieldset">
@@ -808,6 +1131,11 @@ export function NewFilePage() {
               setShowSuccessModal(false);
               setProgress(0);
               setCanViewUploadedItem(false);
+              setContentOriginValue("manga");
+              setShowOptionalFields(false);
+              setEnabledOptionalFields([]);
+              setMetadataPairs([]);
+              setOptionalFieldToAdd("");
               setValidatedArchiveKey("");
               setArchiveValidationError("");
               setArchiveReportVisible(false);
