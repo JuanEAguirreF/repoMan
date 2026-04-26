@@ -4,6 +4,7 @@ import { apiGet, apiPostFormWithProgress } from "../../lib/api";
 import { useI18n } from "../../lib/i18n";
 import { useSeo } from "../../lib/seo";
 import { buildPublicFilePath } from "../../lib/slug";
+import { trackEvent } from "../../lib/analytics";
 
 const DEFAULT_MAX_MAIN_FILE_BYTES = 200 * 1024 * 1024;
 const MAX_COVER_BYTES = 5 * 1024 * 1024;
@@ -310,6 +311,15 @@ export function NewFilePage() {
 
   const maxMainFileMb = Math.floor(maxMainFileBytes / 1024 / 1024);
 
+  function failValidation(message: string, reason: string): never {
+    trackEvent("upload_validation_error", {
+      reason,
+      publication_mode: publicationMode
+    });
+    setError(message);
+    throw new Error("__upload_validation_handled__");
+  }
+
   function mapArchiveErrorToMessage(raw: string): string {
     if (raw === "rar5_not_supported") return t.archiveValidationRar5Unsupported;
     if (raw === "rar_signature_not_supported") return t.archiveValidationRarUnsupported;
@@ -406,18 +416,27 @@ export function NewFilePage() {
     const mainFile = data.get("file");
     const coverImage = data.get("coverImage");
 
-    if (!title) return setError(t.validationTitleRequired);
-    if (alternateName.length > 200) return setError(t.validationAlternateNameLength);
-    if (author.length > 200) return setError(t.validationAuthorLength);
-    if (artist.length > 200) return setError(t.validationArtistLength);
-    if (!description) return setError(t.validationDescriptionRequired);
-    if (!category) return setError(t.validationCategoryRequired);
-    if (!(categories as string[]).includes(category)) return setError(t.validationCategoryInvalid);
-    if (!["manga", "manhwa", "manhua"].includes(contentOrigin)) return setError(t.validationContentOriginRequired);
-    if (!(coverImage instanceof File) || coverImage.size <= 0) return setError(t.validationCoverRequired);
+    try {
+      if (!title) failValidation(t.validationTitleRequired, "title_required");
+      if (alternateName.length > 200) failValidation(t.validationAlternateNameLength, "alternate_name_too_long");
+      if (author.length > 200) failValidation(t.validationAuthorLength, "author_too_long");
+      if (artist.length > 200) failValidation(t.validationArtistLength, "artist_too_long");
+      if (!description) failValidation(t.validationDescriptionRequired, "description_required");
+      if (!category) failValidation(t.validationCategoryRequired, "category_required");
+      if (!(categories as string[]).includes(category)) failValidation(t.validationCategoryInvalid, "category_invalid");
+      if (!["manga", "manhwa", "manhua"].includes(contentOrigin)) failValidation(t.validationContentOriginRequired, "content_origin_invalid");
+      if (!(coverImage instanceof File) || coverImage.size <= 0) failValidation(t.validationCoverRequired, "cover_required");
+    } catch (error) {
+      if ((error as Error).message === "__upload_validation_handled__") return;
+      throw error;
+    }
 
     const hasMainFile = mainFile instanceof File && mainFile.size > 0;
-    if (publicationMode === "preserve" && !hasMainFile) return setError(t.validationMainFileRequired);
+    if (publicationMode === "preserve" && !hasMainFile) {
+      setError(t.validationMainFileRequired);
+      trackEvent("upload_validation_error", { reason: "main_file_required", publication_mode: publicationMode });
+      return;
+    }
 
     if (publicationMode === "request_backup") {
       data.delete("file");
@@ -425,24 +444,57 @@ export function NewFilePage() {
 
     const mainExt = hasMainFile ? getExtension(mainFile.name) : "";
     const coverExt = getExtension(coverImage.name);
-    if (hasMainFile && !ALLOWED_MAIN_EXTENSIONS.includes(mainExt)) return setError(t.validationMainFileType);
-    if (hasMainFile && mainFile.size > maxMainFileBytes) return setError(`${t.validationMainFileSize} (${maxMainFileMb} MB)`);
-    if (!ALLOWED_COVER_EXTENSIONS.includes(coverExt)) return setError(t.validationCoverType);
-    if (coverImage.size > MAX_COVER_BYTES) return setError(t.validationCoverSize);
+    if (hasMainFile && !ALLOWED_MAIN_EXTENSIONS.includes(mainExt)) {
+      setError(t.validationMainFileType);
+      trackEvent("upload_validation_error", { reason: "main_file_type_invalid", publication_mode: publicationMode });
+      return;
+    }
+    if (hasMainFile && mainFile.size > maxMainFileBytes) {
+      setError(`${t.validationMainFileSize} (${maxMainFileMb} MB)`);
+      trackEvent("upload_validation_error", { reason: "main_file_size_exceeded", publication_mode: publicationMode });
+      return;
+    }
+    if (!ALLOWED_COVER_EXTENSIONS.includes(coverExt)) {
+      setError(t.validationCoverType);
+      trackEvent("upload_validation_error", { reason: "cover_type_invalid", publication_mode: publicationMode });
+      return;
+    }
+    if (coverImage.size > MAX_COVER_BYTES) {
+      setError(t.validationCoverSize);
+      trackEvent("upload_validation_error", { reason: "cover_size_exceeded", publication_mode: publicationMode });
+      return;
+    }
     if (extraMetadata) {
       try {
         JSON.parse(extraMetadata);
       } catch {
-        return setError(t.validationMetadataJson);
+        setError(t.validationMetadataJson);
+        trackEvent("upload_validation_error", { reason: "extra_metadata_invalid_json", publication_mode: publicationMode });
+        return;
       }
     }
 
     if (hasMainFile && ARCHIVE_EXTENSIONS.has(mainExt) && validatedArchiveKey !== makeFileKey(mainFile)) {
       const isArchiveValid = await runArchiveValidationForSelectedFile(mainFile);
-      if (!isArchiveValid) return;
+      if (!isArchiveValid) {
+        trackEvent("upload_archive_validation_failed", {
+          publication_mode: publicationMode,
+          extension: mainExt.replace(".", "")
+        });
+        return;
+      }
+      trackEvent("upload_archive_validation_success", {
+        publication_mode: publicationMode,
+        extension: mainExt.replace(".", "")
+      });
     }
 
     try {
+      trackEvent("upload_submit", {
+        publication_mode: publicationMode,
+        has_main_file: hasMainFile,
+        content_origin: contentOrigin
+      });
       setIsSubmitting(true);
       setProgress(0);
       const response = await apiPostFormWithProgress<{
@@ -452,6 +504,11 @@ export function NewFilePage() {
       setStatus(t.uploadQueued);
       const uploadedItem = response?.item;
       const viewAllowed = uploadedItem?.status === "active" && uploadedItem?.is_public === true;
+      trackEvent("upload_success", {
+        publication_mode: publicationMode,
+        status: uploadedItem?.status || "unknown",
+        is_public: uploadedItem?.is_public === true
+      });
       setCanViewUploadedItem(viewAllowed);
       setLastUploadedSlug(viewAllowed ? uploadedItem?.slug ?? "" : "");
       setShowSuccessModal(true);
@@ -464,6 +521,9 @@ export function NewFilePage() {
       if (coverPreviewUrl) URL.revokeObjectURL(coverPreviewUrl);
       setCoverPreviewUrl("");
     } catch (error) {
+      trackEvent("upload_error", {
+        publication_mode: publicationMode
+      });
       setError((error as Error).message);
     } finally {
       setIsSubmitting(false);
@@ -820,6 +880,7 @@ export function NewFilePage() {
                 <button
                   type="button"
                   onClick={() => {
+                    trackEvent("upload_success_view_click", { location: "upload_success_modal" });
                     setShowSuccessModal(false);
                     navigate(lastUploadedSlug ? buildPublicFilePath(lastUploadedSlug) : "/dashboard/files");
                   }}
@@ -831,6 +892,7 @@ export function NewFilePage() {
                 type="button"
                 className="ghost-btn"
                 onClick={() => {
+                  trackEvent("upload_success_more_click", { location: "upload_success_modal" });
                   setShowSuccessModal(false);
                   setStatus("");
                   setCanViewUploadedItem(false);

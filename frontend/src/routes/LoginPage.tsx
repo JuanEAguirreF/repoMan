@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { useI18n } from "../lib/i18n";
 import { useSeo } from "../lib/seo";
+import { trackEvent } from "../lib/analytics";
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -26,12 +27,15 @@ export function LoginPage() {
     e.preventDefault();
     setError("");
     setIsSubmitting(true);
+    trackEvent("login_submit", { location: "login_page" });
     const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
     if (authError) {
+      trackEvent("login_error", { location: "login_page" });
       setError(authError.message);
       setIsSubmitting(false);
       return;
     }
+    trackEvent("login_success", { location: "login_page" });
     navigate("/dashboard/files");
   }
 

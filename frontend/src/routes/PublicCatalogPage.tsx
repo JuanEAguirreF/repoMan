@@ -6,6 +6,7 @@ import { CatalogFile } from "../types";
 import { useI18n } from "../lib/i18n";
 import { SpiralHero } from "../components/SpiralHero";
 import { buildPublicFilePath } from "../lib/slug";
+import { trackEvent } from "../lib/analytics";
 
 function shuffled<T>(input: T[]): T[] {
   const arr = [...input];
@@ -41,6 +42,7 @@ export function PublicCatalogPage() {
   const shouldRestoreFocusRef = useRef(false);
   const caretPosRef = useRef<number | null>(null);
   const skeletonItems = useMemo(() => Array.from({ length: 9 }, (_, i) => i), []);
+  const lastTrackedSearchRef = useRef<string>("");
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -49,6 +51,16 @@ export function PublicCatalogPage() {
     }, 600);
     return () => window.clearTimeout(timer);
   }, [searchInput]);
+
+  useEffect(() => {
+    if (!search || search.length < 2) return;
+    if (lastTrackedSearchRef.current === search) return;
+    lastTrackedSearchRef.current = search;
+    trackEvent("catalog_search", {
+      search_term: search,
+      page_path: "/"
+    });
+  }, [search]);
 
   async function loadCatalog(targetPage: number, append = false) {
     const params = new URLSearchParams({
@@ -289,7 +301,13 @@ export function PublicCatalogPage() {
           <div className="sister-card">
             <strong>{t.sisterTitle}</strong>
             <p>{t.sisterLead}</p>
-            <a className="sister-link" href={sisterPlatformUrl} target="_blank" rel="noopener noreferrer">
+            <a
+              className="sister-link"
+              href={sisterPlatformUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => trackEvent("sister_platform_click", { location: "catalog_sidebar" })}
+            >
               {t.sisterCta}
             </a>
           </div>
@@ -330,6 +348,7 @@ export function PublicCatalogPage() {
               href="https://ko-fi.com/comunidaddelmanga"
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => trackEvent("kofi_click", { location: "catalog_sidebar" })}
             >
               {t.supportCta}
             </a>
@@ -339,7 +358,13 @@ export function PublicCatalogPage() {
             {discordImageUrl && <img src={discordImageUrl} alt="" className="discord-image" aria-hidden="true" />}
             <strong>{t.discordTitle}</strong>
             <p>{t.discordLead}</p>
-            <a className="discord-link" href={discordInviteUrl} target="_blank" rel="noopener noreferrer">
+            <a
+              className="discord-link"
+              href={discordInviteUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => trackEvent("discord_click", { location: "catalog_sidebar" })}
+            >
               {t.discordCta}
             </a>
           </div>

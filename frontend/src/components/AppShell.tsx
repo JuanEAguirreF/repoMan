@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { apiGet } from "../lib/api";
 import { SessionUser } from "../types";
 import { useI18n } from "../lib/i18n";
+import { trackEvent } from "../lib/analytics";
 
 export function AppShell() {
   const [me, setMe] = useState<SessionUser | null>(null);
@@ -147,7 +148,13 @@ export function AppShell() {
             </>
           ) : (
             <>
-              <a className="chip-link" href={sisterPlatformUrl} target="_blank" rel="noopener noreferrer">
+              <a
+                className="chip-link"
+                href={sisterPlatformUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => trackEvent("sister_platform_click", { location: "header" })}
+              >
                 <span className="nav-glyph" aria-hidden="true">⌁</span>
                 <span>{t.navReadOnline}</span>
               </a>
@@ -175,9 +182,30 @@ export function AppShell() {
           <section>
             <h3>{t.footerCommunityTitle}</h3>
             <nav className="site-footer-links" aria-label={t.footerCommunityTitle}>
-              <a href={discordInviteUrl} target="_blank" rel="noopener noreferrer">{t.footerLinkDiscord}</a>
-              <a href={sisterPlatformUrl} target="_blank" rel="noopener noreferrer">{t.footerLinkIdeas}</a>
-              <a href="https://ko-fi.com/comunidaddelmanga" target="_blank" rel="noopener noreferrer">{t.footerLinkSupport}</a>
+              <a
+                href={discordInviteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => trackEvent("discord_click", { location: "footer" })}
+              >
+                {t.footerLinkDiscord}
+              </a>
+              <a
+                href={sisterPlatformUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => trackEvent("sister_platform_click", { location: "footer" })}
+              >
+                {t.footerLinkIdeas}
+              </a>
+              <a
+                href="https://ko-fi.com/comunidaddelmanga"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => trackEvent("kofi_click", { location: "footer" })}
+              >
+                {t.footerLinkSupport}
+              </a>
             </nav>
           </section>
           <section>

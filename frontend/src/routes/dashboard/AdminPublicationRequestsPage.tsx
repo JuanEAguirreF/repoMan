@@ -4,6 +4,7 @@ import { useI18n } from "../../lib/i18n";
 import { useSeo } from "../../lib/seo";
 import { resolveCoverUrl } from "../../lib/api";
 import { supabase } from "../../lib/supabase";
+import { trackEvent } from "../../lib/analytics";
 
 type PublicationRequest = {
   id: string;
@@ -122,23 +123,34 @@ export function AdminPublicationRequestsPage() {
   }, []);
 
   async function approve(fileId: string) {
+    trackEvent("admin_publication_approve_click", { file_id: fileId });
     await apiPost(`/admin/publication-requests/${fileId}/approve`, undefined, true);
+    trackEvent("admin_publication_approve_success", { file_id: fileId });
     await load();
   }
 
   async function reject(fileId: string) {
+    trackEvent("admin_publication_reject_click", { file_id: fileId });
     await apiPost(`/admin/publication-requests/${fileId}/reject`, undefined, true);
+    trackEvent("admin_publication_reject_success", { file_id: fileId });
     await load();
   }
 
   async function openTree(fileId: string) {
     try {
+      trackEvent("admin_review_tree_open_click", { file_id: fileId });
       setTreeLoadingId(fileId);
       setError("");
       const res = await apiGet<ReviewTreeResponse>(`/admin/publication-requests/${fileId}/content-tree`, true);
       setReviewTree(res);
       setReviewTreeOpen(true);
+      trackEvent("admin_review_tree_open_success", {
+        file_id: fileId,
+        format: res.inspection.format,
+        total_entries: res.inspection.summary.totalEntries
+      });
     } catch (e) {
+      trackEvent("admin_review_tree_open_error", { file_id: fileId });
       setError((e as Error).message);
     } finally {
       setTreeLoadingId(null);
@@ -147,6 +159,7 @@ export function AdminPublicationRequestsPage() {
 
   async function downloadForReview(fileId: string) {
     try {
+      trackEvent("admin_review_download_click", { file_id: fileId });
       setDownloadLoadingId(fileId);
       setError("");
       const { data } = await supabase.auth.getSession();
@@ -158,6 +171,10 @@ export function AdminPublicationRequestsPage() {
         undefined,
         true
       );
+      trackEvent("admin_review_download_token_issued", {
+        file_id: fileId,
+        ttl_seconds: downloadToken?.ttlSeconds ?? 0
+      });
       if (!downloadToken?.token) throw new Error("Could not issue a secure download token.");
 
       const res = await fetch(
@@ -181,7 +198,9 @@ export function AdminPublicationRequestsPage() {
       anchor.click();
       anchor.remove();
       URL.revokeObjectURL(url);
+      trackEvent("admin_review_download_success", { file_id: fileId });
     } catch (e) {
+      trackEvent("admin_review_download_error", { file_id: fileId });
       setError((e as Error).message);
     } finally {
       setDownloadLoadingId(null);

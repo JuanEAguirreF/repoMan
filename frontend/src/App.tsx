@@ -1,4 +1,5 @@
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { useEffect, useRef } from "react";
+import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { AppShell } from "./components/AppShell";
 import { LoginPage } from "./routes/LoginPage";
 import { PublicCatalogPage } from "./routes/PublicCatalogPage";
@@ -14,10 +15,26 @@ import { AdminFilesPage } from "./routes/dashboard/AdminFilesPage";
 import { AdminPublicationRequestsPage } from "./routes/dashboard/AdminPublicationRequestsPage";
 import { AdminEditRequestsPage } from "./routes/dashboard/AdminEditRequestsPage";
 import { AdminAuditLogsPage } from "./routes/dashboard/AdminAuditLogsPage";
+import { trackPageView } from "./lib/analytics";
+
+function RouteAnalytics() {
+  const location = useLocation();
+  const lastTrackedPathRef = useRef<string>("");
+
+  useEffect(() => {
+    const fullPath = `${location.pathname}${location.search}${location.hash}`;
+    if (lastTrackedPathRef.current === fullPath) return;
+    lastTrackedPathRef.current = fullPath;
+    trackPageView(fullPath);
+  }, [location.pathname, location.search, location.hash]);
+
+  return null;
+}
 
 export function App() {
   return (
     <BrowserRouter>
+      <RouteAnalytics />
       <Routes>
         <Route element={<AppShell />}>
           <Route path="/" element={<PublicCatalogPage />} />

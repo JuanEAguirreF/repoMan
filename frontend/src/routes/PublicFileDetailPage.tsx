@@ -5,6 +5,7 @@ import { useSeo } from "../lib/seo";
 import { CatalogFile } from "../types";
 import { useI18n } from "../lib/i18n";
 import { buildPublicFilePath, extractSlugParam } from "../lib/slug";
+import { trackEvent } from "../lib/analytics";
 
 function displayFileType(mimeType: string): string {
   const lower = mimeType.toLowerCase();
@@ -112,17 +113,24 @@ export function PublicFileDetailPage() {
     : `¿Reconoces esta obra? '${displayTitle}'. Si la tienes descargada, o crees que alguien más puede tenerla, comparte esta página con esa persona para ayudar a conservarla.`;
 
   async function shareEntry() {
+    trackEvent("share_click", {
+      location: "file_detail",
+      has_backup: currentItem.has_backup
+    });
     const url = window.location.href;
     const payload = { title: displayTitle, text: shareMessage, url };
     try {
       if (navigator.share) {
         await navigator.share(payload);
+        trackEvent("share_success", { method: "native", location: "file_detail" });
         setShareStatus(t.shareDone);
         return;
       }
       await navigator.clipboard.writeText(`${shareMessage}\n${url}`);
+      trackEvent("share_success", { method: "clipboard", location: "file_detail" });
       setShareStatus(t.shareCopied);
     } catch {
+      trackEvent("share_error", { location: "file_detail" });
       setShareStatus(t.shareFailed);
     }
   }
@@ -198,7 +206,13 @@ export function PublicFileDetailPage() {
               <div className="detail-backup-callout">
                 <p className="detail-note">{t.noBackupDetail}</p>
                 <div className="detail-action-buttons">
-                  <a className="detail-discord-link" href={discordInviteUrl} target="_blank" rel="noopener noreferrer">
+                  <a
+                    className="detail-discord-link"
+                    href={discordInviteUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => trackEvent("discord_click", { location: "file_detail_no_backup" })}
+                  >
                     {t.discordCta}
                   </a>
                   <button type="button" className="chip-btn detail-share-btn" onClick={shareEntry}>
