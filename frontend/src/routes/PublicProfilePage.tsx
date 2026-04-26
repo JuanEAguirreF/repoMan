@@ -168,7 +168,7 @@ export function PublicProfilePage() {
             alt={item.displayName}
           />
         </div>
-        <div>
+        <div className="profile-main-info">
           <h1>{item.displayName}</h1>
           <span className={roleClass}>{roleLabel}</span>
           <p className="meta-line">

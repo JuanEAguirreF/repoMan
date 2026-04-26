@@ -6,6 +6,9 @@ import { useSeo } from "../../lib/seo";
 import { buildPublicFilePath } from "../../lib/slug";
 import { CatalogFile } from "../../types";
 
+const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
+const AVATAR_ALLOWED_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
+
 type ProfilePayload = {
   profile: {
     id: string;
@@ -33,8 +36,10 @@ export function MyProfilePage() {
   const [error, setError] = useState("");
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarMessage, setAvatarMessage] = useState("");
+  const [filesPage, setFilesPage] = useState(1);
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const headerImageUrl = (import.meta.env.VITE_HEADER_IMAGE_URL as string | undefined)?.trim() || "";
+  const filesPageSize = 8;
 
   const ux = useMemo(
     () =>
@@ -48,7 +53,7 @@ export function MyProfilePage() {
             lastLogin: "Último inicio de sesión",
             neverLogin: "Sin registros todavía",
             avatarTitle: "Avatar",
-            avatarHint: "PNG, JPG o WEBP. Máximo 2 MB.",
+            avatarInvalid: "El avatar debe ser PNG, JPG o WEBP y pesar máximo 2 MB.",
             avatarTap: "Haz clic en el avatar para actualizarlo",
             avatarSaving: "Subiendo avatar...",
             avatarSuccess: "Avatar actualizado correctamente.",
@@ -60,7 +65,11 @@ export function MyProfilePage() {
             statDeleted: "Eliminados",
             filesTitle: "Mis archivos",
             noFiles: "Aún no tienes archivos publicados.",
-            openDetail: "Ver detalle"
+            openDetail: "Ver detalle",
+            pageInfo: "Página",
+            of: "de",
+            prev: "Anterior",
+            next: "Siguiente"
           }
         : {
             title: "My Profile",
@@ -71,7 +80,7 @@ export function MyProfilePage() {
             lastLogin: "Last login",
             neverLogin: "No login records yet",
             avatarTitle: "Avatar",
-            avatarHint: "PNG, JPG or WEBP. Max 2 MB.",
+            avatarInvalid: "Avatar must be PNG, JPG or WEBP and 2 MB max.",
             avatarTap: "Click the avatar to update it",
             avatarSaving: "Uploading avatar...",
             avatarSuccess: "Avatar updated successfully.",
@@ -83,7 +92,11 @@ export function MyProfilePage() {
             statDeleted: "Deleted",
             filesTitle: "My files",
             noFiles: "You have no uploaded files yet.",
-            openDetail: "Open detail"
+            openDetail: "Open detail",
+            pageInfo: "Page",
+            of: "of",
+            prev: "Previous",
+            next: "Next"
           },
     [locale]
   );
@@ -149,6 +162,12 @@ export function MyProfilePage() {
   async function handleAvatarSelected(event: ChangeEvent<HTMLInputElement>) {
     const file = event.currentTarget.files?.[0] ?? null;
     if (file) {
+      if (!AVATAR_ALLOWED_TYPES.has(file.type) || file.size > MAX_AVATAR_BYTES) {
+        setAvatarMessage("");
+        setError(ux.avatarInvalid);
+        event.currentTarget.value = "";
+        return;
+      }
       await uploadAvatar(file);
     }
     event.currentTarget.value = "";
@@ -157,6 +176,15 @@ export function MyProfilePage() {
   const lastLoginText = data?.profile.lastLoginAt
     ? new Date(data.profile.lastLoginAt).toLocaleString(locale === "es" ? "es-CO" : "en-US")
     : ux.neverLogin;
+
+  const totalFilePages = data ? Math.max(1, Math.ceil(data.files.length / filesPageSize)) : 1;
+  const safeFilesPage = Math.min(filesPage, totalFilePages);
+  const pagedFiles = data
+    ? data.files.slice((safeFilesPage - 1) * filesPageSize, safeFilesPage * filesPageSize)
+    : [];
+  const filesCanPrev = safeFilesPage > 1;
+  const filesCanNext = safeFilesPage < totalFilePages;
+  const filePageNumbers = buildVisiblePages(safeFilesPage, totalFilePages);
 
   if (loading) {
     return (
@@ -181,8 +209,8 @@ export function MyProfilePage() {
       <h1>{ux.title}</h1>
       <p>{ux.lead}</p>
 
-      <div className="profile-bento">
-        <article className="profile-card profile-main-card">
+      <div className="profile-bento private-profile-bento">
+        <article className="profile-card profile-main-card private-profile-main-card">
           <button
             type="button"
             className="profile-avatar-wrap profile-avatar-button"
@@ -195,6 +223,7 @@ export function MyProfilePage() {
               src={data.profile.avatarUrl || headerImageUrl}
               alt={data.profile.displayName}
             />
+            <span className="profile-avatar-edit-icon" aria-hidden="true">✎</span>
           </button>
           <input
             ref={avatarInputRef}
@@ -203,10 +232,8 @@ export function MyProfilePage() {
             accept=".png,.jpg,.jpeg,.webp"
             onChange={handleAvatarSelected}
           />
-          <div>
+          <div className="profile-main-info private-profile-info">
             <h2>{data.profile.displayName}</h2>
-            <p className="meta-line profile-avatar-help">{ux.avatarTap}</p>
-            <p className="meta-line">{ux.avatarHint}</p>
             <p className="meta-line">
               {ux.role}: <strong>{data.profile.role === "super_admin" ? "Super Admin" : "Uploader"}</strong>
             </p>
@@ -221,7 +248,7 @@ export function MyProfilePage() {
           </div>
         </article>
 
-        <article className="profile-card profile-stats-card">
+        <article className="profile-card profile-stats-card private-profile-stats-card">
           <h3>{ux.statsTitle}</h3>
           <div className="profile-stats-grid">
             <div className="stat-box">
@@ -242,13 +269,13 @@ export function MyProfilePage() {
           </div>
         </article>
 
-        <article className="profile-card profile-files-card">
+        <article className="profile-card profile-files-card private-profile-files-card">
           <h3>{ux.filesTitle}</h3>
           {data.files.length === 0 ? (
             <p className="meta-line">{ux.noFiles}</p>
           ) : (
             <div className="profile-files-list">
-              {data.files.slice(0, 16).map((file) => (
+              {pagedFiles.map((file) => (
                 <div key={file.id} className="profile-file-row">
                   <div>
                     <strong>{file.title}</strong>
@@ -259,10 +286,70 @@ export function MyProfilePage() {
               ))}
             </div>
           )}
+          {data.files.length > filesPageSize && (
+            <div className="profile-pagination">
+              <button
+                type="button"
+                className="chip-btn profile-page-btn"
+                onClick={() => filesCanPrev && setFilesPage((p) => p - 1)}
+                disabled={!filesCanPrev}
+              >
+                {ux.prev}
+              </button>
+              <span className="profile-page-status">
+                {ux.pageInfo} {safeFilesPage} {ux.of} {totalFilePages}
+              </span>
+              <div className="profile-page-numbers">
+                {filePageNumbers.map((value, idx) =>
+                  value === "ellipsis" ? (
+                    <span key={`private-ellipsis-${idx}`} className="profile-page-ellipsis">
+                      ...
+                    </span>
+                  ) : (
+                    <button
+                      key={`private-page-${value}`}
+                      type="button"
+                      className={`chip-btn profile-page-number ${value === safeFilesPage ? "is-active" : ""}`}
+                      onClick={() => setFilesPage(value)}
+                      disabled={value === safeFilesPage}
+                    >
+                      {value}
+                    </button>
+                  )
+                )}
+              </div>
+              <button
+                type="button"
+                className="chip-btn profile-page-btn"
+                onClick={() => filesCanNext && setFilesPage((p) => p + 1)}
+                disabled={!filesCanNext}
+              >
+                {ux.next}
+              </button>
+            </div>
+          )}
         </article>
       </div>
 
       {error && <p className="upload-error">{error}</p>}
     </section>
   );
+}
+
+function buildVisiblePages(current: number, total: number): Array<number | "ellipsis"> {
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+  const pages = new Set<number>([1, total, current, current - 1, current + 1]);
+  const sorted = Array.from(pages).filter((n) => n >= 1 && n <= total).sort((a, b) => a - b);
+  const result: Array<number | "ellipsis"> = [];
+  for (let i = 0; i < sorted.length; i += 1) {
+    const value = sorted[i];
+    const prev = sorted[i - 1];
+    if (i > 0 && value - prev > 1) {
+      result.push("ellipsis");
+    }
+    result.push(value);
+  }
+  return result;
 }
