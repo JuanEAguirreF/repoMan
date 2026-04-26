@@ -159,7 +159,7 @@ export function PublicProfilePage() {
   const pageNumbers = buildVisiblePages(item.page, totalPages);
 
   return (
-    <section className="profile-page">
+    <section className="profile-page public-profile-page">
       <div className="profile-card profile-main-card">
         <div className="profile-avatar-wrap">
           <img
@@ -232,7 +232,7 @@ export function PublicProfilePage() {
                     alt={file.title}
                   />
                   <div>
-                    <strong>{(file.alternate_name || "").trim() || file.title}</strong>
+                    <strong>{file.title}</strong>
                     <p className="meta-line">{file.category}</p>
                   </div>
                 </div>

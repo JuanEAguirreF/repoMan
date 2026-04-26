@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiGet, apiPost } from "../../lib/api";
 import { useI18n } from "../../lib/i18n";
@@ -31,9 +31,10 @@ export function MyProfilePage() {
   const [data, setData] = useState<ProfilePayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarMessage, setAvatarMessage] = useState("");
+  const avatarInputRef = useRef<HTMLInputElement | null>(null);
+  const headerImageUrl = (import.meta.env.VITE_HEADER_IMAGE_URL as string | undefined)?.trim() || "";
 
   const ux = useMemo(
     () =>
@@ -48,8 +49,7 @@ export function MyProfilePage() {
             neverLogin: "Sin registros todavía",
             avatarTitle: "Avatar",
             avatarHint: "PNG, JPG o WEBP. Máximo 2 MB.",
-            avatarSelect: "Seleccionar avatar",
-            avatarSave: "Actualizar avatar",
+            avatarTap: "Haz clic en el avatar para actualizarlo",
             avatarSaving: "Subiendo avatar...",
             avatarSuccess: "Avatar actualizado correctamente.",
             statsTitle: "Resumen de actividad",
@@ -72,8 +72,7 @@ export function MyProfilePage() {
             neverLogin: "No login records yet",
             avatarTitle: "Avatar",
             avatarHint: "PNG, JPG or WEBP. Max 2 MB.",
-            avatarSelect: "Select avatar",
-            avatarSave: "Update avatar",
+            avatarTap: "Click the avatar to update it",
             avatarSaving: "Uploading avatar...",
             avatarSuccess: "Avatar updated successfully.",
             statsTitle: "Activity summary",
@@ -120,15 +119,13 @@ export function MyProfilePage() {
     };
   }, []);
 
-  async function submitAvatar(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!avatarFile) return;
+  async function uploadAvatar(file: File) {
     setAvatarUploading(true);
     setAvatarMessage("");
     setError("");
     try {
       const formData = new FormData();
-      formData.set("avatar", avatarFile);
+      formData.set("avatar", file);
       const response = await apiPost<{ ok: boolean; avatarUrl: string | null }>("/users/me/avatar", formData, true);
       setData((prev) =>
         prev
@@ -142,12 +139,19 @@ export function MyProfilePage() {
           : prev
       );
       setAvatarMessage(ux.avatarSuccess);
-      setAvatarFile(null);
     } catch (err) {
       setError((err as Error).message);
     } finally {
       setAvatarUploading(false);
     }
+  }
+
+  async function handleAvatarSelected(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.currentTarget.files?.[0] ?? null;
+    if (file) {
+      await uploadAvatar(file);
+    }
+    event.currentTarget.value = "";
   }
 
   const lastLoginText = data?.profile.lastLoginAt
@@ -179,15 +183,30 @@ export function MyProfilePage() {
 
       <div className="profile-bento">
         <article className="profile-card profile-main-card">
-          <div className="profile-avatar-wrap">
-            {data.profile.avatarUrl ? (
-              <img className="profile-avatar" src={data.profile.avatarUrl} alt={data.profile.displayName} />
-            ) : (
-              <div className="profile-avatar profile-avatar-fallback">{data.profile.displayName.slice(0, 1).toUpperCase()}</div>
-            )}
-          </div>
+          <button
+            type="button"
+            className="profile-avatar-wrap profile-avatar-button"
+            onClick={() => avatarInputRef.current?.click()}
+            disabled={avatarUploading}
+            title={ux.avatarTap}
+          >
+            <img
+              className="profile-avatar"
+              src={data.profile.avatarUrl || headerImageUrl}
+              alt={data.profile.displayName}
+            />
+          </button>
+          <input
+            ref={avatarInputRef}
+            className="file-input-native"
+            type="file"
+            accept=".png,.jpg,.jpeg,.webp"
+            onChange={handleAvatarSelected}
+          />
           <div>
             <h2>{data.profile.displayName}</h2>
+            <p className="meta-line profile-avatar-help">{ux.avatarTap}</p>
+            <p className="meta-line">{ux.avatarHint}</p>
             <p className="meta-line">
               {ux.role}: <strong>{data.profile.role === "super_admin" ? "Super Admin" : "Uploader"}</strong>
             </p>
@@ -197,23 +216,9 @@ export function MyProfilePage() {
             <p className="meta-line">
               {ux.lastLogin}: <strong>{lastLoginText}</strong>
             </p>
+            {avatarUploading && <p className="meta-line profile-avatar-status">{ux.avatarSaving}</p>}
+            {!avatarUploading && avatarMessage && <p className="upload-success">{avatarMessage}</p>}
           </div>
-        </article>
-
-        <article className="profile-card profile-avatar-card">
-          <h3>{ux.avatarTitle}</h3>
-          <p className="meta-line">{ux.avatarHint}</p>
-          <form className="profile-avatar-form" onSubmit={submitAvatar}>
-            <input
-              type="file"
-              accept=".png,.jpg,.jpeg,.webp"
-              onChange={(event) => setAvatarFile(event.currentTarget.files?.[0] ?? null)}
-            />
-            <button type="submit" disabled={avatarUploading || !avatarFile}>
-              {avatarUploading ? ux.avatarSaving : ux.avatarSave}
-            </button>
-          </form>
-          {avatarMessage && <p className="upload-success">{avatarMessage}</p>}
         </article>
 
         <article className="profile-card profile-stats-card">
@@ -246,7 +251,7 @@ export function MyProfilePage() {
               {data.files.slice(0, 16).map((file) => (
                 <div key={file.id} className="profile-file-row">
                   <div>
-                    <strong>{file.alternate_name?.trim() || file.title}</strong>
+                    <strong>{file.title}</strong>
                     <p className="meta-line">{file.category} · {file.status}</p>
                   </div>
                   <Link to={buildPublicFilePath(file.slug)} className="meta-link">{ux.openDetail}</Link>
@@ -261,4 +266,3 @@ export function MyProfilePage() {
     </section>
   );
 }
-

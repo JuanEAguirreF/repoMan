@@ -145,24 +145,29 @@ export function PublicFileDetailPage() {
       </nav>
       <h1 className="detail-title">{displayTitle}</h1>
       <div className="detail-layout">
-        <div className="detail-cover">
-          <img src={resolveCoverUrl(currentItem.id, currentItem.cover_image_path)} alt={currentItem.title} />
-        </div>
-        <div className="detail-side">
+        <div className="detail-cover-col">
+          <div className="detail-cover">
+            <img src={resolveCoverUrl(currentItem.id, currentItem.cover_image_path)} alt={currentItem.title} />
+          </div>
           {currentItem.uploader?.profileId && (
-            <div className="detail-uploader-inline">
-              <Link to={`/profiles/${currentItem.uploader.profileId}`} className="detail-uploader-link">
-                <img
-                  className="detail-uploader-avatar"
-                  src={currentItem.uploader.avatarUrl || headerImageUrl}
-                  alt={currentItem.uploader.displayName}
-                />
-              </Link>
-              <Link to={`/profiles/${currentItem.uploader.profileId}`} className="detail-uploader-name">
-                {currentItem.uploader.displayName}
-              </Link>
+            <div className="detail-uploader-under-cover">
+              <span className="detail-uploader-label">Subido por:</span>
+              <div className="detail-uploader-inline">
+                <Link to={`/profiles/${currentItem.uploader.profileId}`} className="detail-uploader-link">
+                  <img
+                    className="detail-uploader-avatar"
+                    src={currentItem.uploader.avatarUrl || headerImageUrl}
+                    alt={currentItem.uploader.displayName}
+                  />
+                </Link>
+                <Link to={`/profiles/${currentItem.uploader.profileId}`} className="detail-uploader-name">
+                  {currentItem.uploader.displayName}
+                </Link>
+              </div>
             </div>
           )}
+        </div>
+        <div className="detail-side">
           <p>{currentItem.description}</p>
           <dl className="detail-meta">
             {!!currentItem.alternate_name?.trim() && (

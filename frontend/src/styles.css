@@ -772,6 +772,11 @@ a {
   align-items: start;
 }
 
+.detail-cover-col {
+  display: grid;
+  gap: 8px;
+}
+
 .detail-cover {
   width: 100%;
   aspect-ratio: 1/1.41;
@@ -791,17 +796,35 @@ a {
   color: var(--muted);
 }
 
+.detail-uploader-under-cover {
+  display: grid;
+  gap: 4px;
+  padding: 0 2px;
+  opacity: 0.88;
+}
+
+.detail-uploader-label {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
 .detail-uploader-inline {
   display: inline-flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 7px;
-  margin: 0 0 8px auto;
-  opacity: 0.86;
+  margin: 0;
 }
 
 .detail-uploader-link {
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid rgba(200, 161, 106, 0.28);
+  background: rgba(24, 35, 50, 0.72);
   text-decoration: none;
   color: inherit;
 }
@@ -811,8 +834,8 @@ a {
   height: 24px;
   border-radius: 999px;
   object-fit: cover;
-  border: 1px solid rgba(200, 161, 106, 0.28);
-  background: #182332;
+  border: 1px solid rgba(200, 161, 106, 0.2);
+  background: #121c29;
 }
 
 .detail-uploader-name {
@@ -1968,6 +1991,31 @@ a {
   gap: 12px;
 }
 
+.public-profile-page .profile-card {
+  width: 100%;
+}
+
+.public-profile-page .profile-files-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.public-profile-page .profile-file-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.public-profile-page .profile-file-row-main > div {
+  min-width: 0;
+}
+
+.public-profile-page .profile-file-row-main strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .profile-page h1 {
   margin-bottom: 2px;
 }
@@ -2015,6 +2063,18 @@ a {
   height: 110px;
 }
 
+.profile-avatar-button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.profile-avatar-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
 .profile-avatar {
   width: 100%;
   height: 100%;
@@ -2030,6 +2090,14 @@ a {
   font-family: "Cinzel", serif;
   font-size: 2rem;
   color: #e9d4b5;
+}
+
+.profile-avatar-help {
+  margin-top: 0;
+}
+
+.profile-avatar-status {
+  color: #d8b482;
 }
 
 .profile-main-card h2,
@@ -2474,6 +2542,10 @@ a {
   }
 
   .profile-bento {
+    grid-template-columns: 1fr;
+  }
+
+  .public-profile-page .profile-files-list {
     grid-template-columns: 1fr;
   }
 
