@@ -44,6 +44,16 @@ type ArchiveValidationProgress = { pct: number; phase: string };
 type SelectedFileMeta = { name: string; size: number; ext: string; mime: string };
 type MetadataPair = { id: string; key: string; value: string };
 type MetadataPreset = { key: string; value: string };
+type UploadDraft = {
+  publicationMode: PublicationMode;
+  contentOrigin: ContentOrigin;
+  title: string;
+  description: string;
+  category: string;
+  optionalValues: Record<OptionalFieldKey, string>;
+  enabledOptionalFields: OptionalFieldKey[];
+  metadataPairs: MetadataPair[];
+};
 
 function createClientId(): string {
   return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
@@ -263,6 +273,7 @@ export function NewFilePage() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [lastUploadedSlug, setLastUploadedSlug] = useState<string>("");
   const [canViewUploadedItem, setCanViewUploadedItem] = useState(false);
+  const [lastUploadDraft, setLastUploadDraft] = useState<UploadDraft | null>(null);
   const [maxMainFileBytes, setMaxMainFileBytes] = useState<number>(DEFAULT_MAX_MAIN_FILE_BYTES);
   const [showOptionalFields, setShowOptionalFields] = useState(false);
   const [enabledOptionalFields, setEnabledOptionalFields] = useState<OptionalFieldKey[]>([]);
@@ -293,7 +304,8 @@ export function NewFilePage() {
             extraMetaPresetLead: "Sugerencias rápidas según tipo de obra",
             extraMetaPresetAll: "Agregar sugerencias",
             extraMetaMoveUp: "Subir",
-            extraMetaMoveDown: "Bajar"
+            extraMetaMoveDown: "Bajar",
+            uploadSuccessMoreSameSeries: "Subir más del mismo manga"
           }
         : {
             optionalToggleShow: "Show optional fields",
@@ -314,7 +326,8 @@ export function NewFilePage() {
             extraMetaPresetLead: "Quick suggestions by content type",
             extraMetaPresetAll: "Add suggestions",
             extraMetaMoveUp: "Up",
-            extraMetaMoveDown: "Down"
+            extraMetaMoveDown: "Down",
+            uploadSuccessMoreSameSeries: "Upload more from the same manga"
           },
     [locale]
   );
@@ -497,6 +510,7 @@ export function NewFilePage() {
     const alternateName = String(data.get("alternateName") || "").trim();
     const author = String(data.get("author") || "").trim();
     const artist = String(data.get("artist") || "").trim();
+    const tags = String(data.get("tags") || "").trim();
     const description = String(data.get("description") || "").trim();
     const category = String(data.get("category") || "").trim();
     const contentOrigin = contentOriginValue;
@@ -613,6 +627,25 @@ export function NewFilePage() {
       });
       setCanViewUploadedItem(viewAllowed);
       setLastUploadedSlug(viewAllowed ? uploadedItem?.slug ?? "" : "");
+      setLastUploadDraft({
+        publicationMode,
+        contentOrigin,
+        title,
+        description,
+        category,
+        optionalValues: {
+          alternateName,
+          author,
+          artist,
+          tags
+        },
+        enabledOptionalFields: [...enabledOptionalFields],
+        metadataPairs: metadataPairs.map((pair) => ({
+          id: createClientId(),
+          key: pair.key,
+          value: pair.value
+        }))
+      });
       setShowSuccessModal(true);
       form.reset();
       setContentOriginValue("manga");
@@ -675,6 +708,37 @@ export function NewFilePage() {
         next.push({ id: createClientId(), key: preset.key, value: preset.value });
       }
       return next;
+    });
+  }
+
+  function applyUploadDraft(draft: UploadDraft) {
+    if (!formRef.current) return;
+    const form = formRef.current;
+
+    const setFieldValue = (name: string, value: string) => {
+      const field = form.elements.namedItem(name) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null;
+      if (field) field.value = value;
+    };
+
+    setPublicationMode(draft.publicationMode);
+    setContentOriginValue(draft.contentOrigin);
+    setEnabledOptionalFields(draft.enabledOptionalFields);
+    setShowOptionalFields(draft.enabledOptionalFields.length > 0 || draft.metadataPairs.length > 0);
+    setOptionalFieldToAdd("");
+    setMetadataPairs(draft.metadataPairs.map((pair) => ({ ...pair, id: createClientId() })));
+
+    setFieldValue("title", draft.title);
+    setFieldValue("description", draft.description);
+    setFieldValue("category", draft.category);
+    setFieldValue("contentOrigin", draft.contentOrigin);
+
+    requestAnimationFrame(() => {
+      setFieldValue("alternateName", draft.optionalValues.alternateName);
+      setFieldValue("author", draft.optionalValues.author);
+      setFieldValue("artist", draft.optionalValues.artist);
+      setFieldValue("tags", draft.optionalValues.tags);
+      const titleField = form.elements.namedItem("title") as HTMLInputElement | null;
+      titleField?.focus();
     });
   }
 
@@ -1129,6 +1193,7 @@ export function NewFilePage() {
               setStatus("");
               setError("");
               setShowSuccessModal(false);
+              setLastUploadDraft(null);
               setProgress(0);
               setCanViewUploadedItem(false);
               setContentOriginValue("manga");
@@ -1216,6 +1281,21 @@ export function NewFilePage() {
                   {t.uploadSuccessView}
                 </button>
               )}
+              <button
+                type="button"
+                className="ghost-btn"
+                onClick={() => {
+                  if (!lastUploadDraft) return;
+                  trackEvent("upload_success_same_series_click", { location: "upload_success_modal" });
+                  setShowSuccessModal(false);
+                  setStatus("");
+                  setCanViewUploadedItem(false);
+                  applyUploadDraft(lastUploadDraft);
+                }}
+                disabled={!lastUploadDraft}
+              >
+                {ux.uploadSuccessMoreSameSeries}
+              </button>
               <button
                 type="button"
                 className="ghost-btn"
