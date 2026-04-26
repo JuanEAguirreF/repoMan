@@ -14,6 +14,7 @@ const envSchema = z.object({
   CLOUDINARY_API_SECRET: z.string().min(1),
   CLOUDINARY_FOLDER: z.string().default("repoman/covers"),
   STORAGE_ROOT: z.string().default("./uploads"),
+  CHUNK_UPLOAD_SESSION_TTL_MINUTES: z.coerce.number().default(120),
   MAX_FILE_SIZE_BYTES: z.coerce.number().default(200 * 1024 * 1024),
   MAX_COVER_SIZE_BYTES: z.coerce.number().default(5 * 1024 * 1024),
   COVER_TARGET_MAX_WIDTH: z.coerce.number().default(400),

@@ -1,12 +1,14 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { apiGet, apiPostFormWithProgress } from "../../lib/api";
+import { apiDelete, apiGet, apiPost, apiPostFormWithProgress, apiPutBinaryWithProgress } from "../../lib/api";
 import { useI18n } from "../../lib/i18n";
 import { useSeo } from "../../lib/seo";
 import { buildPublicFilePath } from "../../lib/slug";
 import { trackEvent } from "../../lib/analytics";
 
 const DEFAULT_MAX_MAIN_FILE_BYTES = 200 * 1024 * 1024;
+const CHUNKED_UPLOAD_THRESHOLD_BYTES = 90 * 1024 * 1024;
+const CHUNK_SIZE_BYTES = 8 * 1024 * 1024;
 const MAX_COVER_BYTES = 5 * 1024 * 1024;
 const ALLOWED_MAIN_EXTENSIONS = [".pdf", ".zip", ".cbz", ".cbr", ".txt", ".doc", ".docx"];
 const ALLOWED_COVER_EXTENSIONS = [".png", ".jpg", ".jpeg", ".webp"];
@@ -254,6 +256,7 @@ export function NewFilePage() {
   const uploadLastProgressAtRef = useRef<number>(0);
   const uploadLastPctRef = useRef<number>(0);
   const retryAfterAbortRef = useRef(false);
+  const currentChunkUploadIdRef = useRef<string | null>(null);
   const lastValidationProgressAtRef = useRef<number>(0);
   const validationRunIdRef = useRef<number>(0);
   const [status, setStatus] = useState("");
@@ -317,7 +320,8 @@ export function NewFilePage() {
             uploadStalledBody:
               "Detectamos que el progreso no avanza desde hace un momento. Puede haber un problema de red o del servidor.",
             uploadStalledCancel: "Cancelar",
-            uploadStalledRetry: "Cancelar y reintentar"
+            uploadStalledRetry: "Cancelar y reintentar",
+            uploadPreparingChunks: "Preparando subida por partes..."
           }
         : {
             optionalToggleShow: "Show optional fields",
@@ -346,7 +350,8 @@ export function NewFilePage() {
             uploadStalledBody:
               "Progress has not moved for a while. There may be a network or server issue.",
             uploadStalledCancel: "Cancel",
-            uploadStalledRetry: "Cancel and retry"
+            uploadStalledRetry: "Cancel and retry",
+            uploadPreparingChunks: "Preparing chunked upload..."
           },
     [locale]
   );
@@ -530,6 +535,18 @@ export function NewFilePage() {
     return true;
   }
 
+  async function cleanupChunkedUploadSession() {
+    const uploadId = currentChunkUploadIdRef.current;
+    if (!uploadId) return;
+    try {
+      await apiDelete<{ ok: boolean }>(`/files/chunks/${uploadId}`, true);
+    } catch {
+      // No-op: session may already be cleaned server-side.
+    } finally {
+      currentChunkUploadIdRef.current = null;
+    }
+  }
+
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setStatus("");
@@ -650,21 +667,92 @@ export function NewFilePage() {
       uploadLastPctRef.current = 0;
       const uploadAbortController = new AbortController();
       uploadAbortRef.current = uploadAbortController;
-      const response = await apiPostFormWithProgress<{
-        item?: { id?: string; slug?: string; status?: string; is_public?: boolean };
-      }>(
-        "/files",
-        data,
-        (pct) => {
-          if (pct !== uploadLastPctRef.current) {
-            uploadLastPctRef.current = pct;
-            uploadLastProgressAtRef.current = Date.now();
-          }
-          setProgress(pct);
-        },
-        uploadAbortController.signal
+      const useChunkedMainUpload = Boolean(
+        hasMainFile &&
+          publicationMode === "preserve" &&
+          mainFile instanceof File &&
+          mainFile.size >= CHUNKED_UPLOAD_THRESHOLD_BYTES
       );
+
+      let response: { item?: { id?: string; slug?: string; status?: string; is_public?: boolean } };
+      if (useChunkedMainUpload && mainFile instanceof File) {
+        setStatus(ux.uploadPreparingChunks);
+        const totalChunks = Math.ceil(mainFile.size / CHUNK_SIZE_BYTES);
+        const init = await apiPost<{ uploadId: string; chunkSize: number; totalChunks: number }>(
+          "/files/chunks/init",
+          {
+            filename: mainFile.name,
+            mimetype: mainFile.type || "application/octet-stream",
+            size: mainFile.size,
+            chunkSize: CHUNK_SIZE_BYTES,
+            totalChunks
+          },
+          true
+        );
+        currentChunkUploadIdRef.current = init.uploadId;
+
+        for (let idx = 0; idx < totalChunks; idx += 1) {
+          const start = idx * CHUNK_SIZE_BYTES;
+          const end = Math.min(mainFile.size, start + CHUNK_SIZE_BYTES);
+          const chunk = mainFile.slice(start, end);
+          const chunkBasePct = (idx / totalChunks) * 85;
+          const chunkWeightPct = 85 / totalChunks;
+
+          await apiPutBinaryWithProgress<{ ok: boolean }>(
+            `/files/chunks/${init.uploadId}/${idx}`,
+            chunk,
+            (chunkPct) => {
+              const pct = Math.min(85, Math.round(chunkBasePct + (chunkPct / 100) * chunkWeightPct));
+              if (pct !== uploadLastPctRef.current) {
+                uploadLastPctRef.current = pct;
+                uploadLastProgressAtRef.current = Date.now();
+              }
+              setProgress(pct);
+            },
+            uploadAbortController.signal
+          );
+        }
+
+        const finalizeData = new FormData();
+        data.forEach((value, key) => {
+          finalizeData.append(key, value);
+        });
+        finalizeData.delete("file");
+        finalizeData.set("chunkUploadId", init.uploadId);
+        response = await apiPostFormWithProgress<{
+          item?: { id?: string; slug?: string; status?: string; is_public?: boolean };
+        }>(
+          "/files",
+          finalizeData,
+          (finalPct) => {
+            const pct = Math.max(85, Math.min(100, Math.round(85 + (finalPct / 100) * 15)));
+            if (pct !== uploadLastPctRef.current) {
+              uploadLastPctRef.current = pct;
+              uploadLastProgressAtRef.current = Date.now();
+            }
+            setProgress(pct);
+          },
+          uploadAbortController.signal
+        );
+        currentChunkUploadIdRef.current = null;
+      } else {
+        response = await apiPostFormWithProgress<{
+          item?: { id?: string; slug?: string; status?: string; is_public?: boolean };
+        }>(
+          "/files",
+          data,
+          (pct) => {
+            if (pct !== uploadLastPctRef.current) {
+              uploadLastPctRef.current = pct;
+              uploadLastProgressAtRef.current = Date.now();
+            }
+            setProgress(pct);
+          },
+          uploadAbortController.signal
+        );
+      }
       setProgress(100);
+      setStatus("");
       setStatus(t.uploadQueued);
       const uploadedItem = response?.item;
       const viewAllowed = uploadedItem?.status === "active" && uploadedItem?.is_public === true;
@@ -710,11 +798,13 @@ export function NewFilePage() {
         trackEvent("upload_cancelled", { publication_mode: publicationMode });
         setError("");
         setStatus(ux.uploadCancelled);
+        await cleanupChunkedUploadSession();
       } else {
         trackEvent("upload_error", {
           publication_mode: publicationMode
         });
         setError(message);
+        await cleanupChunkedUploadSession();
       }
     } finally {
       const shouldRetry = retryAfterAbortRef.current;
