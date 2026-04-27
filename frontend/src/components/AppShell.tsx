@@ -19,20 +19,40 @@ export function AppShell() {
 
   useEffect(() => {
     let active = true;
+    const inFlight = { current: null as Promise<void> | null };
 
     async function loadCurrentUser() {
-      try {
-        const res = await apiGet<{ user: SessionUser }>("/auth/session", true);
-        if (active) setMe(res.user);
-      } catch {
-        if (active) setMe(null);
-      }
+      if (inFlight.current) return inFlight.current;
+      inFlight.current = (async () => {
+        try {
+          const res = await apiGet<{ user: SessionUser }>("/auth/session", true);
+          if (active) setMe(res.user);
+        } catch {
+          if (active) setMe(null);
+        }
+      })().finally(() => {
+        inFlight.current = null;
+      });
+      return inFlight.current;
     }
 
-    loadCurrentUser();
+    function scheduleLoadCurrentUser() {
+      window.setTimeout(() => {
+        if (active) void loadCurrentUser();
+      }, 0);
+    }
 
-    const { data } = supabase.auth.onAuthStateChange(() => {
-      loadCurrentUser();
+    void loadCurrentUser();
+
+    const { data } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") {
+        setMe(null);
+        return;
+      }
+
+      if (event === "SIGNED_IN" || event === "INITIAL_SESSION" || event === "USER_UPDATED") {
+        scheduleLoadCurrentUser();
+      }
     });
 
     return () => {

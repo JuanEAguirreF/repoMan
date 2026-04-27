@@ -2,9 +2,22 @@ import { supabase } from "./supabase";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL as string;
 
+let accessTokenPromise: Promise<string | null> | null = null;
+
+async function getAccessToken() {
+  if (!accessTokenPromise) {
+    accessTokenPromise = supabase.auth
+      .getSession()
+      .then(({ data }) => data.session?.access_token ?? null)
+      .finally(() => {
+        accessTokenPromise = null;
+      });
+  }
+  return accessTokenPromise;
+}
+
 async function authHeaders() {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
+  const token = await getAccessToken();
   const headers: Record<string, string> = {};
   if (token) headers.Authorization = `Bearer ${token}`;
   return headers;
