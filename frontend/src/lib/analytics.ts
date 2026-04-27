@@ -17,9 +17,10 @@ function ensureDataLayer() {
 
 function ensureGtagFunction() {
   if (typeof window.gtag === "function") return;
-  window.gtag = (...args: unknown[]) => {
+  window.gtag = function gtagShim(...args: unknown[]) {
     ensureDataLayer();
-    window.dataLayer!.push(args);
+    // Keep compatibility with the official gtag queue shape.
+    window.dataLayer!.push(arguments);
   };
 }
 
@@ -52,6 +53,7 @@ export function trackPageView(path: string) {
   if (!initialized) initAnalytics();
   if (typeof window.gtag !== "function") return;
   window.gtag("event", "page_view", {
+    send_to: GA_ID,
     page_path: path,
     page_location: window.location.href,
     page_title: document.title
@@ -62,5 +64,8 @@ export function trackEvent(eventName: string, params?: AnalyticsEventParams) {
   if (!isAnalyticsEnabled()) return;
   if (!initialized) initAnalytics();
   if (typeof window.gtag !== "function") return;
-  window.gtag("event", eventName, params ?? {});
+  window.gtag("event", eventName, {
+    send_to: GA_ID,
+    ...(params ?? {})
+  });
 }
